@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Data / outputs
+*.pth
+*.pt
+*.ckpt
+*.npy
+*.npz
+data/
+outputs/
+runs/
+
+# Temp / scratch (agents & experiments)
+_*.py
+_*.txt
+_*.log
+_smoke*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

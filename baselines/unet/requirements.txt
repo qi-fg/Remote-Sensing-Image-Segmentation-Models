@@ -1,0 +1,6 @@
+# Core (demo mode only needs torch)
+torch>=2.0
+
+# Only needed for --data (real datasets: reading png/tif images)
+# pillow>=10.0
+# numpy>=1.24
