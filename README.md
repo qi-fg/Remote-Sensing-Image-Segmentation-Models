@@ -10,7 +10,7 @@
 
 [![Awesome](https://img.shields.io/badge/Awesome-RS%20Segmentation-0e7490?style=for-the-badge&logo=awesomelists&logoColor=white)](https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models)
 [![Stars](https://img.shields.io/github/stars/qi-fg/Remote-Sensing-Image-Segmentation-Models?style=for-the-badge&color=ef4444&logo=github)](https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models/stargazers)
-[![Papers](https://img.shields.io/badge/Methods-40%2B-15803d?style=for-the-badge)](README.md)
+[![Papers](https://img.shields.io/badge/Methods-60%2B-15803d?style=for-the-badge)](README.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](../../pulls)
 [![License](https://img.shields.io/badge/License-MIT-3b82f6?style=for-the-badge)](LICENSE)
 
@@ -26,7 +26,7 @@
 
 本仓库就是为解决这个问题而生：
 
-- 📚 **方法总表**：按**方法族**（CNN → Transformer → Foundation/SAM → 弱监督/点监督）整理，含论文、会议/期刊、年份、官方代码、代表数据集。
+- 📚 **方法总表**：按**方法族**（CNN → Transformer → Foundation/SAM → 弱监督/点监督 → **LLM / MLLM / Agent**）整理，含论文、会议/期刊、年份、官方代码、代表数据集。
 - 📐 **可运行基线**：`baselines/` 下提供 **真实可跑** 的基线实现（U-Net / SegFormer / SAM wrapper），clone 下来装上依赖就能跑，**自带合成数据冒烟测试，无需数据集、无需 GPU**。
 - 📦 **数据集索引**：`datasets.md` 汇总常用 RS 分割数据集（Potsdam / Vaihingen / LoveDA / iSAID / DeepGlobe / WHU / HRSID ...）与下载入口。
 
@@ -41,9 +41,10 @@
 | 🧱 CNN-based 经典基线 | 8 | FCN · U-Net · DeepLabV3+ · HRNet |
 | 🔷 Transformer / Attention | 8 | SegFormer · Mask2Former · SETR · Swin |
 | 🚀 Foundation Models / SAM 家族 | 14 | SAM · SAM2 · SAMRS · RSPrompter · RingMo |
-| 🎯 弱监督 / 点监督 / 少样本 | 7 | PointSAM · ReSAM · UV-SAM |
-| 🔄 变化检测 / 其他 | 4 | Change detection · Panoptic · Text-guided |
-| **合计** | **40+** | *持续更新中* |
+| 🎯 弱监督 / 点监督 / 少样本 | 6 | PointSAM · ReSAM · UV-SAM |
+| 🔄 变化检测 / 其他 | 4 | Change detection · Panoptic · Road-SAM |
+| 🧠 大模型 / Agent 驱动 | 23 | LISA · LISAT · SegEarth-R2 · Change-Agent |
+| **合计** | **60+** | *持续更新中* |
 
 ---
 
@@ -105,7 +106,6 @@
 | **ReSAM** ⭐ | 2026 | CVPR | 自提示闭环 Refine–Requery–Reinforce + 软语义对齐(SSA)，1 点标注逼近全监督，训练显存比 PointSAM 低 84% | [💻](https://github.com/MNaseerSubhani/ReSAM) |
 | **PointSAM** ⭐ | 2025 | TGRS | 点监督微调 SAM：原型正则(PBR) 用匈牙利匹配纠偏伪标签 + 负提示校准(NPC) 抑制实例粘连 | [💻](https://github.com/Lans1ng/PointSAM) |
 | **UV-SAM** | 2024 | AAAI | 把 SAM 适配到"城中村识别"（弱监督场景） | [arXiv](https://arxiv.org/abs/2401.08083) · [DOI](https://doi.org/10.1609/aaai.v38i20.30260) |
-| **Text2Seg** | 2023 | arXiv | 文本引导的视觉基础模型 RS 分割 | [💻](https://github.com/zhangjielu321/Text2Seg) |
 | **SAM for RS (zero to one shot)** | 2023 | JAG | 系统评估 SAM 在 RS 的 zero-/one-shot 分割能力（被引 470+） | [DOI](https://doi.org/10.1016/j.jag.2023.103540) |
 | **Sparse-Annotation RS Seg** | 2021 | GRSL | 稀疏（点/涂鸦）标注驱动的高分辨率 RS 分割，弱监督范式代表作 | [DOI](https://doi.org/10.1109/LGRS.2021.3051053) |
 | **WSF-Net** | 2018 | Remote Sensing | 图像级标签弱监督的特征融合网络（水体/云二分类分割） | [DOI](https://doi.org/10.3390/rs10121970) |
@@ -128,6 +128,56 @@
 | **ChangeFormer** | 2022 | IGARSS | Transformer 变化检测 | [💻](https://github.com/wgcban/ChangeFormer) |
 | **RSPS-SAM** | 2024 | Remote Sensing | 基于 SAM 的遥感全景分割（批量注意力金字塔 + 掩码解码器） | [DOI](https://doi.org/10.3390/rs16214002) |
 | **Road-SAM** | 2024 | GRSL | SAM 适配大幅 VHR 道路提取 | [DOI](https://doi.org/10.1109/LGRS.2024.3430900) |
+
+### 🧠 F. 大模型 / Agent 驱动的分割（LLM · MLLM · Agent）
+
+> 🚀 2023 年之后的新范式：不再"为每个地物训一个分类器"，而是**用自然语言描述目标 → 直接输出掩码**。两条路线并行：
+> **① 对比式（CLIP 系）**——算文本与像素的相似度，天然支持开放词表，但缺空间推理能力；
+> **② 生成式 / 推理式（MLLM 系）**——大模型先把语言推理成**几何 prompt**（点 / 框 / token embedding），再交给 SAM 出掩码，能处理"左边那栋被树挡住一半的楼"这类复杂指令。
+> 再往前一步就是 **Agent 化**：LLM 当调度器，把检测 / 分割 / 变化分析等工具串成工作流。
+
+#### F1. 通用领域底座（这一族的技术源头）
+
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
+| :--- | :--: | :-- | :-- | :--: |
+| **CLIPSeg** | 2022 | CVPR | 用 CLIP 的文本 / 图像 prompt 直接出分割图，**对比式路线起点** | [arXiv](https://arxiv.org/abs/2112.10003) · [💻](https://github.com/timojl/clipseg) |
+| **OVSeg** | 2023 | CVPR | Mask-adapted CLIP，开放词表语义分割早期代表作 | [arXiv](https://arxiv.org/abs/2210.04150) · [💻](https://github.com/facebookresearch/ov-seg) |
+| **SegGPT** | 2023 | ICCV | In-context 分割：给一个示例掩码，自动分割同类的其它目标 | [arXiv](https://arxiv.org/abs/2304.03284) · [💻](https://github.com/baaivision/Painter) |
+| **Grounded SAM** | 2024 | arXiv | Grounding DINO + SAM：**文本指代 → 框 → 掩码**，落地最广的组合范式 | [arXiv](https://arxiv.org/abs/2401.14159) · [💻](https://github.com/IDEA-Research/Grounded-Segment-Anything) |
+| **LISA** ⭐ | 2024 | CVPR | **推理分割**开山之作：LLM 生成特殊 token，其 embedding 直接当 SAM 的 mask prompt（embedding-as-mask） | [arXiv](https://arxiv.org/abs/2308.00692) · [💻](https://github.com/dvlab-research/LISA) |
+| **PixelLM** | 2024 | CVPR | 多尺度 token + 多目标，一个 MLLM 同时输出多实例掩码 | [arXiv](https://arxiv.org/abs/2312.02228) |
+| **VisionLLM v2** | 2024 | NeurIPS | 通用多任务 MLLM，把分割变成"语言可调用"的能力 | [arXiv](https://arxiv.org/abs/2406.08394) |
+
+#### F2. 遥感：语言引导 / 推理分割
+
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
+| :--- | :--: | :-- | :-- | :--: |
+| **Text2Seg** | 2023 | arXiv | 早期把 CLIP + SAM 组合起来做遥感文本引导分割 | [arXiv](https://arxiv.org/abs/2304.10597) · [💻](https://github.com/zhangjielu321/Text2Seg) |
+| **GeoChat** | 2024 | CVPR | 遥感 grounded VLM，支持区域级指代（分割的上游能力） | [arXiv](https://arxiv.org/abs/2311.15826) |
+| **SegEarth-OV** | 2024 | arXiv | **免训练**开放词表分割：把 CLIP 语义注入 SAM，无需标注迁移 | [arXiv](https://arxiv.org/abs/2410.01768) |
+| **OVRS** | 2025 | TGRS | 旋转聚合相似度 + 多尺度融合，解决遥感目标**朝向多变** | [arXiv](https://arxiv.org/abs/2409.07683) · [DOI](https://doi.org/10.1109/TGRS.2025.3559557) |
+| **GeoPix** | 2025 | IEEE GRSM | 给 RS MLLM 装 mask predictor，实现**像素级对话** | [arXiv](https://arxiv.org/abs/2501.06828) |
+| **SegEarth-R1** | 2025 | arXiv | 地理空间**像素推理**：把位置 / 属性描述落到掩码上 | [arXiv](https://arxiv.org/abs/2504.09644) |
+| **LISAT** ⭐ | 2025 | NeurIPS | 卫星影像推理分割：RemoteCLIP + Vicuna-7B + SAM 解码器，配套 GRES 数据集 | [arXiv](https://arxiv.org/abs/2505.02829) |
+| **UniGeoSeg** | 2025 | arXiv | 统一开放世界地理空间分割，一个模型覆盖多任务 | [arXiv](https://arxiv.org/abs/2511.23332) · [💻](https://github.com/MiliLab/UniGeoSeg) |
+| **Think2Seg-RS** | 2025 | arXiv | **解耦式 LVLM-SAM**：LLM 只学生成几何 prompt、SAM 全程冻结，用 mask-only 强化学习训练 | [arXiv](https://arxiv.org/abs/2512.19302) |
+| **SegEarth-R2** | 2025 | arXiv | 面向复杂指令（层级粒度 / 多目标 / 隐含意图），配套 LaSeRS 数据集 | [arXiv](https://arxiv.org/abs/2512.20013) · [💻](https://github.com/earth-insights/SegEarth-R2) |
+| **SegEarth-OV3** | 2025 | arXiv | 探索 SAM 3 在遥感开放词表分割上的能力边界 | [arXiv](https://arxiv.org/abs/2512.08730) |
+| **Training-Free Text-Based RS Seg** | 2026 | CVPRW | 完全免训练管线：CLIP 当 SAM 候选掩码的选择器；生成式路线用 GPT-5 或 LoRA 微调 Qwen-VL 产出点击 prompt | [arXiv](https://arxiv.org/abs/2602.17799) |
+
+> 🔎 F2 是这一族的主战场：**遥感特有的难点是"朝向多变 + 尺度极端 + 小目标多"**，所以很多工作都在解决"通用分割模型直接搬过来不好使"的问题。
+
+#### F3. 遥感：Agent / 工具编排管线
+
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
+| :--- | :--: | :-- | :-- | :--: |
+| **Tree-GPT** | 2023 | arXiv | 模块化 LLM 专家系统：LLM 规划并调用林业遥感的检测 / 分割工具 | [arXiv](https://arxiv.org/abs/2310.04698) |
+| **Remote Sensing ChatGPT** | 2024 | arXiv | 用 ChatGPT 当调度器，按自然语言需求串起多个视觉模型完成任务 | [arXiv](https://arxiv.org/abs/2401.09083) |
+| **Change-Agent** ⭐ | 2024 | TGRS | LLM Agent 驱动的地表变化**解译**：自动调用变化检测 + 变化描述工具，支持多轮交互 | [arXiv](https://arxiv.org/abs/2403.19646) |
+| **Multi-Weather DomainShifter** | 2025 | J. Imaging | LLM Agent 编排风格迁移 + 扩散模型，把晴空影像扩增成雾 / 尘 / 雪域，缓解分割的域偏移 | [DOI](https://doi.org/10.3390/jimaging11110395) · [💻](https://github.com/WayBob/domainshifter) |
+
+> 💡 **为什么这一族值得单独看**：弱监督 / 点监督解决的是"**标注贵**"，而 LLM / Agent 路线解决的是"**指令复杂 + 目标开放**"——用户说人话，模型自己决定切什么。
+> 目前两个公认痛点：① **小目标**（RS 影像里目标常常只有几个像素，MLLM 的视觉编码器分辨率不够）；② **语义级与实例级 grounding 的落差**（能判断"哪里有车"，不一定能把每一辆框准）。
 
 ---
 

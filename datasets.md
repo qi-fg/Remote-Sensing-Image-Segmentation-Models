@@ -1,6 +1,6 @@
 # 📦 遥感图像分割常用数据集
 
-> 覆盖语义分割 / 实例分割 / 建筑物·道路提取 / 变化检测。链接以官方页面为准，若失效欢迎 PR 修正。
+> 覆盖语义分割 / 实例分割 / 建筑物·道路提取 / **语言引导·推理分割** / 变化检测。链接以官方页面为准，若失效欢迎 PR 修正。
 
 ---
 
@@ -34,6 +34,21 @@
 | **Massachusetts Roads** | 1171 图 | 1 m，航拍道路 | [🔗](https://www.cs.toronto.edu/~vmnih/data/) |
 | **SpaceNet** | 多城市多期 | 商业卫星，建筑/道路 | [🔗](https://spacenet.ai/) |
 
+## 🧠 语言引导 / 推理分割（Language-guided & Reasoning Segmentation）
+
+> 对应主 README 的 **F 族（LLM / MLLM / Agent）**。这一族的数据集还很新，多数与论文同时发布、需要按官方仓库申请或下载。
+
+| 数据集 | 规模 | 特点 | 任务 | 入口 |
+| :-- | :-- | :-- | :-- | :-- |
+| **GRES** (Geospatial Reasoning Segmentation) | 9,205 图 / 27,615 标注 | 半合成：以 xView 为基底，GPT-4V 生成**带消歧描述的查询**，GeoSAM 生成像素掩码（LISAT 论文配套） | 推理分割 | [🔗](https://arxiv.org/abs/2505.02829) |
+| **PreGRES** | 100 万+ QA 对 | 汇聚既有 RS 数据的 caption / VQA / 视觉指代，用于预训练地理多模态 LLM | 多模态预训练 | [🔗](https://arxiv.org/abs/2505.02829) |
+| **LaSeRS** | 首个大规模综合集 | 覆盖四个维度：层级粒度 / 目标数量 / 推理需求 / 语言多样性（SegEarth-R2 论文配套） | 语言引导分割 | [🔗](https://arxiv.org/abs/2512.20013) |
+| **EarthReason** | — | 面向推理分割的评测集（Think2Seg-RS 在此报告 SOTA） | 推理分割评测 | [🔗](https://arxiv.org/abs/2512.19302) |
+
+> 💡 与 Potsdam / LoveDA 这类"固定类别"数据集不同，这一族的核心是**指令与描述的多样性**——同一个目标会有多种说法，评测时更看重对**未见指令**的泛化，而不是刷单一 mIoU。
+
+---
+
 ## 🔄 变化检测（Change Detection）
 
 | 数据集 | 规模 | 特点 | 入口 |
@@ -41,19 +56,6 @@
 | **LEVIR-CD** | 637 对，0.5 m | 建筑变化检测基准 | [🔗](https://chen-yongrui.github.io/) |
 | **WHU-CD** | 1 对大幅影像 | 建筑物变化 | [🔗](http://gpcv.whu.edu.cn/data/) |
 | **CDD (Change Detection Dataset)** | 16,000 对 | 季节变化 | 🔗 官网 |
-
----
-
-## 🗂️ 高光谱分类数据集（附：主仓库未覆盖，但常一起用）
-
-> 若你后续要做高光谱方向，这些是标配：
-
-| 数据集 | 类别数 | 场景 |
-| :-- | :--: | :-- |
-| Indian Pines | 16 | 农业区，145×145×200 |
-| Pavia University | 9 | 城市，610×340×103 |
-| Salinas | 16 | 农业，512×217×204 |
-| Houston 2013 / 2018 | 15 / 20 | 城市，GRSS 竞赛 |
 
 ---
 
