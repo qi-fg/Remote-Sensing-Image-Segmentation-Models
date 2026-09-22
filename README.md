@@ -192,6 +192,6 @@ python train.py --demo     # 合成数据，CPU 几秒跑完，输出 mIoU
 
 **Made with 🛰️ by [qi-fg](https://github.com/qi-fg)**
 
-*Remote Sensing · Hyperspectral Classification · Agentic Vision*
+*Remote Sensing · Image Segmentation · Foundation Models*
 
 </div>
