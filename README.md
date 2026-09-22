@@ -49,24 +49,24 @@
 
 ## 🗂️ 方法总表
 
-> 说明：`💻` = 官方代码仓库，`📄` = 论文。部分方法无公开代码则仅列论文。欢迎 PR 补充/修正。
+> 说明：最后一列给出**论文链接**（优先 arXiv 免费全文，无 arXiv 时用 DOI 官方页）与**官方代码仓库**（💻）。部分方法无公开代码，仅提供论文链接。欢迎 PR 补充/修正。
 
 ### 🧱 A. CNN-based 经典基线
 
-| 方法 | 年份 | 会议/期刊 | 一句话 | 代码 |
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
 | :--- | :--: | :-- | :-- | :--: |
-| **FCN** (Fully Convolutional Networks) | 2015 | CVPR | 首个端到端全卷积分割网络，语义分割开山之作 | 📄 |
-| **U-Net** | 2015 | MICCAI | 对称编码-解码 + 跳跃连接，RS/医学通用基线 | 📄 |
+| **FCN** (Fully Convolutional Networks) | 2015 | CVPR | 首个端到端全卷积分割网络，语义分割开山之作 | [arXiv](https://arxiv.org/abs/1411.4038) · [DOI](https://doi.org/10.1109/CVPR.2015.7298965) |
+| **U-Net** | 2015 | MICCAI | 对称编码-解码 + 跳跃连接，RS/医学通用基线 | [arXiv](https://arxiv.org/abs/1505.04597) · [DOI](https://doi.org/10.1007/978-3-319-24574-4_28) |
 | **SegNet** | 2017 | TPAMI | 编码器池化索引上采样，轻量经典 | [💻](https://github.com/alexgkendall/SegNet-Tutorial) |
 | **PSPNet** | 2017 | CVPR | 金字塔池化聚合多尺度上下文 | [💻](https://github.com/hszhao/PSPNet) |
 | **DeepLabV3+** | 2018 | ECCV | 空洞卷积 + ASPP + 解码器 | [💻](https://github.com/VainF/DeepLabV3Plus-Pytorch) |
 | **U-Net++** | 2018 | MICCAI-W | 嵌套密集跳跃连接 | [💻](https://github.com/MrGiovanni/UNetPlusPlus) |
 | **HRNet** | 2020 | TPAMI | 全程保持高分辨率表征 | [💻](https://github.com/HRNet/HRNet-Semantic-Segmentation) |
-| **ResUNet-a** | 2020 | ISPRS J. | 残差 U-Net，面向遥感"全场景"分割 | 📄 |
+| **ResUNet-a** | 2020 | ISPRS J. | 残差 U-Net，面向遥感"全场景"分割 | [arXiv](https://arxiv.org/abs/1904.00592) · [DOI](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 
 ### 🔷 B. Transformer / Attention
 
-| 方法 | 年份 | 会议/期刊 | 一句话 | 代码 |
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
 | :--- | :--: | :-- | :-- | :--: |
 | **SETR** | 2021 | CVPR | 首个把 ViT 当编码器的分割网络 | [💻](https://github.com/fudan-zvg/SETR) |
 | **SegFormer** | 2021 | NeurIPS | 分层 Transformer + 轻量 MLP 解码器，高效 SOTA | [💻](https://github.com/NVlabs/SegFormer) |
@@ -79,16 +79,16 @@
 
 ### 🚀 C. Foundation Models / SAM 家族 & RS 基础模型 ★本仓库重点
 
-| 方法 | 年份 | 会议/期刊 | 一句话 | 代码 |
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
 | :--- | :--: | :-- | :-- | :--: |
 | **SAM** (Segment Anything) | 2023 | ICCV | 十亿级掩码训练的通用分割基础模型 | [💻](https://github.com/facebookresearch/segment-anything) |
 | **SAM 2** | 2024 | Meta | 图像 + 视频的流式可提示分割 | [💻](https://github.com/facebookresearch/sam2) |
 | **SAMRS** | 2023 | NeurIPS D&B | 用 SAM + 检测数据生成的大规模 RS 分割数据集（10w 图/166w 实例） | [💻](https://github.com/ViTAE-Transformer/SAMRS) |
 | **RSPrompter** | 2024 | TGRS | 自动学习 prompt，SAM 用于 RS 实例分割 | [💻](https://github.com/KyanChen/RSPrompter) |
 | **HSA-SAM** | 2024 | — | 分层区域 + SAM，面向 RS 语义分割 | [💻](https://github.com/mafanhao666/HSA-SAM) |
-| **GeoSAM** | 2024 | arXiv | 多模态 prompt 微调 SAM，基础设施分割 | 📄 |
-| **RingMo** | 2022 | TGRS | 遥感基础模型，掩码图像建模预训练 | 📄 |
-| **RingMo-SAM** | 2023 | TGRS | 多模态遥感分割基础模型 | 📄 |
+| **GeoSAM** | 2025 | ECAI | 多模态 prompt 微调 SAM，基础设施分割 | [DOI](https://doi.org/10.3233/FAIA250844) |
+| **RingMo** | 2022 | TGRS | 遥感基础模型，掩码图像建模预训练 | [DOI](https://doi.org/10.1109/TGRS.2022.3194732) |
+| **RingMo-SAM** | 2023 | TGRS | 多模态遥感分割基础模型 | [DOI](https://doi.org/10.1109/TGRS.2023.3332219) |
 | **RVSA** | 2022 | TGRS | 旋转可变自注意力，把普通 ViT 推向 RS 基础模型 | [💻](https://github.com/ViTAE-Transformer/Remote-Sensing-RVSA) |
 | **SatMAE** | 2022 | NeurIPS | 时序 + 多光谱卫星图像的 MAE 预训练 | [💻](https://github.com/sustainlab-group/SatMAE) |
 | **Scale-MAE** | 2023 | CVPR | 尺度感知 MAE，学习跨分辨率表征 | [💻](https://github.com/bair-climate-initiative/scale-mae) |
@@ -100,15 +100,15 @@
 
 ### 🎯 D. 弱监督 / 点监督 / 少样本
 
-| 方法 | 年份 | 会议/期刊 | 一句话 | 代码 |
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
 | :--- | :--: | :-- | :-- | :--: |
 | **ReSAM** ⭐ | 2026 | CVPR | 自提示闭环 Refine–Requery–Reinforce + 软语义对齐(SSA)，1 点标注逼近全监督，训练显存比 PointSAM 低 84% | [💻](https://github.com/MNaseerSubhani/ReSAM) |
 | **PointSAM** ⭐ | 2025 | TGRS | 点监督微调 SAM：原型正则(PBR) 用匈牙利匹配纠偏伪标签 + 负提示校准(NPC) 抑制实例粘连 | [💻](https://github.com/Lans1ng/PointSAM) |
-| **UV-SAM** | 2024 | AAAI | 把 SAM 适配到"城中村识别"（弱监督场景） | 📄 |
+| **UV-SAM** | 2024 | AAAI | 把 SAM 适配到"城中村识别"（弱监督场景） | [arXiv](https://arxiv.org/abs/2401.08083) · [DOI](https://doi.org/10.1609/aaai.v38i20.30260) |
 | **Text2Seg** | 2023 | arXiv | 文本引导的视觉基础模型 RS 分割 | [💻](https://github.com/zhangjielu321/Text2Seg) |
-| **Point-supervised RS Seg** | 2023 | TGRS | 点标注驱动的弱监督分割范式 | 📄 |
-| **Box-supervised RSI Seg** | 2023 | TGRS | 框标注弱监督 RS 分割 | 📄 |
-| **Zero-shot RS Seg (SAM)** | 2023 | JAG | 评估 SAM 在 RS 的 zero/one-shot 能力 | 📄 |
+| **SAM for RS (zero to one shot)** | 2023 | JAG | 系统评估 SAM 在 RS 的 zero-/one-shot 分割能力（被引 470+） | [DOI](https://doi.org/10.1016/j.jag.2023.103540) |
+| **Sparse-Annotation RS Seg** | 2021 | GRSL | 稀疏（点/涂鸦）标注驱动的高分辨率 RS 分割，弱监督范式代表作 | [DOI](https://doi.org/10.1109/LGRS.2021.3051053) |
+| **WSF-Net** | 2018 | Remote Sensing | 图像级标签弱监督的特征融合网络（水体/云二分类分割） | [DOI](https://doi.org/10.3390/rs10121970) |
 
 > 🎯 标注成本是 RS 的真实瓶颈。**点/框/文本等弱监督 + 基础模型** 是降低标注成本的关键方向。
 
@@ -124,12 +124,12 @@ NPC 负提示校准                 Reinforce (R³) + SSA   · 更少标注预�
 
 ### 🔄 E. 变化检测 / 其他任务
 
-| 方法 | 年份 | 会议/期刊 | 一句话 | 代码 |
+| 方法 | 年份 | 会议/期刊 | 一句话 | 论文 / 代码 |
 | :--- | :--: | :-- | :-- | :--: |
-| **SAM-based Change Detection** | 2024 | TGRS | 用 SAM 适配 VHR 变化检测 | 📄 |
+| **SAM-CD** | 2024 | TGRS | 用 FastSAM 视觉编码器 + 卷积适配器做 VHR 双时相变化检测 | [arXiv](https://arxiv.org/abs/2309.01429) · [DOI](https://doi.org/10.1109/TGRS.2024.3368168) |
 | **ChangeFormer** | 2022 | IGARSS | Transformer 变化检测 | [💻](https://github.com/wgcban/ChangeFormer) |
-| **Panoptic RS Seg** | 2024 | — | 遥感全景分割 | 📄 |
-| **Road-SAM** | 2024 | GRSL | SAM 适配大幅 VHR 道路提取 | 📄 |
+| **RSPS-SAM** | 2024 | Remote Sensing | 基于 SAM 的遥感全景分割（批量注意力金字塔 + 掩码解码器） | [DOI](https://doi.org/10.3390/rs16214002) |
+| **Road-SAM** | 2024 | GRSL | SAM 适配大幅 VHR 道路提取 | [DOI](https://doi.org/10.1109/LGRS.2024.3430900) |
 
 ---
 
