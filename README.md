@@ -41,7 +41,7 @@
 | 🧱 CNN-based 经典基线 | 8 | FCN · U-Net · DeepLabV3+ · HRNet |
 | 🔷 Transformer / Attention | 8 | SegFormer · Mask2Former · SETR · Swin |
 | 🚀 Foundation Models / SAM 家族 | 14 | SAM · SAM2 · SAMRS · RSPrompter · RingMo |
-| 🎯 弱监督 / 点监督 / 少样本 | 8 | PointSAM · ReSAM · HySAM · UV-SAM |
+| 🎯 弱监督 / 点监督 / 少样本 | 7 | PointSAM · ReSAM · UV-SAM |
 | 🔄 变化检测 / 其他 | 4 | Change detection · Panoptic · Text-guided |
 | **合计** | **40+** | *持续更新中* |
 
@@ -102,7 +102,6 @@
 
 | 方法 | 年份 | 会议/期刊 | 一句话 | 代码 |
 | :--- | :--: | :-- | :-- | :--: |
-| **HySAM** ⭐ | 2025 | 在研 | **本仓库维护者工作**：点监督 RS 分割 + 超曲不确定解耦 | 🔒 |
 | **ReSAM** ⭐ | 2026 | CVPR | 自提示闭环 Refine–Requery–Reinforce + 软语义对齐(SSA)，1 点标注逼近全监督，训练显存比 PointSAM 低 84% | [💻](https://github.com/MNaseerSubhani/ReSAM) |
 | **PointSAM** ⭐ | 2025 | TGRS | 点监督微调 SAM：原型正则(PBR) 用匈牙利匹配纠偏伪标签 + 负提示校准(NPC) 抑制实例粘连 | [💻](https://github.com/Lans1ng/PointSAM) |
 | **UV-SAM** | 2024 | AAAI | 把 SAM 适配到"城中村识别"（弱监督场景） | 📄 |
@@ -111,19 +110,17 @@
 | **Box-supervised RSI Seg** | 2023 | TGRS | 框标注弱监督 RS 分割 | 📄 |
 | **Zero-shot RS Seg (SAM)** | 2023 | JAG | 评估 SAM 在 RS 的 zero/one-shot 能力 | 📄 |
 
-> 🎯 标注成本是 RS 的真实瓶颈。**点/框/文本等弱监督 + 基础模型** 是降低标注成本的关键方向，也是本仓库维护者的研究主线（HySAM）。
+> 🎯 标注成本是 RS 的真实瓶颈。**点/框/文本等弱监督 + 基础模型** 是降低标注成本的关键方向。
 
 **点监督 SAM 适配路线**（本仓库重点关注）：
 
 ```
-阶段 1 · 原型对齐纠偏          阶段 2 · 自提示闭环 + 语义对齐       阶段 3 · 不确定建模
-PointSAM (TGRS'25)   ──▶   ReSAM (CVPR'26)          ──▶   HySAM (本仓库 · 在研)
-PBR 原型正则 +                 Refine–Requery–Reinforce      在自提示框架上
-NPC 负提示校准                 (R³) + SSA 软语义对齐         引入 HUD 超曲不确定解耦
-显存重（原型库）               省 84% 显存：滚动队列             显式区分 aleatoric / epistemic
+阶段 1 · 原型对齐纠偏          阶段 2 · 自提示闭环 + 语义对齐       阶段 3 · 开放前沿
+PointSAM (TGRS'25)   ──▶   ReSAM (CVPR'26)          ──▶   待补充
+PBR 原型正则 +                 Refine–Requery–        不确定性建模 · 跨传感器泛化
+NPC 负提示校准                 Reinforce (R³) + SSA   · 更少标注预算（欢迎 PR）
+显存重（原型库）               省 84% 显存：滚动队列
 ```
-
-> *关于 HySAM：本仓库维护者在研工作（点监督 + 超曲不确定解耦），代码整理开源后将在此更新链接。*
 
 ### 🔄 E. 变化检测 / 其他任务
 
