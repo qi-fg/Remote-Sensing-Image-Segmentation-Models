@@ -205,7 +205,8 @@
 | 基线 | 类型 | 说明 | 快速验证 |
 | :--- | :-- | :-- | :-- |
 | [`baselines/unet/`](baselines/unet) | CNN | 纯 PyTorch U-Net（含 Dice+CE 损失、二分类/多类） | `python train.py --demo` |
-| [`baselines/segformer/`](baselines/segformer) | Transformer | 纯 PyTorch SegFormer（含 tiny CPU demo / B0 配置） | `python train.py --demo` |
+| [`baselines/segformer/`](baselines/segformer) | Transformer | 纯 PyTorch SegFormer，自包含，适合开发 / 消融 | `python train.py --demo` |
+| [`baselines/segformer_standard/`](baselines/segformer_standard) | Transformer | **标准 SegFormer-B0 + NVIDIA MiT-B0 ImageNet-1K 预训练**，用于全监督 benchmark | 统一入口 `--model segformer_b0` |
 | [`baselines/sam_rs/`](baselines/sam_rs) | Foundation | SAM prompt 分割封装（点/框 prompt → mask） | `python predict.py --demo` |
 
 ```bash
@@ -224,15 +225,19 @@ python train.py --demo     # 合成数据，CPU 几秒跑完，输出 mIoU
 python train.py --model unet --mode smoke
 python train.py --model segformer --mode smoke
 
-# ② debug：LoveDA 官方目录，自动处理 7 类 + no-data ignore
+# ② debug：开发版（随机初始化，自包含）
 python train.py --dataset loveda --model segformer --mode debug --data /data/LoveDA
 
-# ③ full：确认无误后再在 GPU 服务器正式训练
-python train.py --dataset loveda --model segformer --mode full --data /data/LoveDA \
+# ③ 论文/benchmark 参考：标准 SegFormer-B0 + ImageNet-1K 预训练
+pip install -r baselines/segformer_standard/requirements.txt
+python train.py --dataset loveda --model segformer_b0 --mode debug --data /data/LoveDA --device cuda
+
+# ④ full：确认协议后再在 GPU 服务器正式训练
+python train.py --dataset loveda --model segformer_b0 --mode full --data /data/LoveDA \
   --epochs 100 --batch-size 8 --amp
 ```
 
-三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)**。
+三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**`segformer` 是仓库自实现开发基线；`segformer_b0` 是标准架构 + NVIDIA ImageNet-1K 预训练的全监督参考。详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)**。
 
 > GitHub Actions **只跑 smoke**，不会下载完整遥感数据集，也不会在 CI 里做长时间训练；真实数据的 debug/full 留给本地或 GPU 服务器。
 
