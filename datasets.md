@@ -10,7 +10,7 @@
 | :-- | :-- | :-- | :-- | :-- |
 | **ISPRS Potsdam** | 38 图，6 类 | 5 cm GSD，城市正射影像 | 语义分割（RS 分割最常用基准之一） | [🔗](https://www.isprs.org/education/benchmarks/UrbanSemLab/2d-sem-label-potsdam.aspx) |
 | **ISPRS Vaihingen** | 33 图，6 类 | 9 cm GSD，含近红外 | 语义分割 | [🔗](https://www.isprs.org/education/benchmarks/UrbanSemLab/2d-sem-label-vaihingen.aspx) |
-| **LoveDA** | 5987 图，7 类 | 0.3 m，城/乡双域，NeurIPS 2021 D&B | 语义分割（域自适应） | [🔗](https://github.com/Junjue-Wang/LoveDA) |
+| **LoveDA** | 5987 图，7 类 | 0.3 m，Urban/Rural 双域；原始标签 1–7，0 为 no-data/ignore | 语义分割（域自适应） | [🔗](https://github.com/Junjue-Wang/LoveDA) |
 | **iSAID** | 2806 图，15 类 | 高分辨率航拍，CVPR 2019 | 语义 + 实例分割 | [🔗](https://captain-whu.github.io/iSAID/) |
 | **DeepGlobe Land Cover** | 1146 图，7 类 | 0.5 m，CVPR 2018 | 地表覆盖分类 | [🔗](http://deepglobe.org/) |
 | **GID (Gaofen Image Dataset)** | 150 图，15 类 | 高分二号，大规模 | 语义分割 | [🔗](https://captain-whu.github.io/GID/) |
