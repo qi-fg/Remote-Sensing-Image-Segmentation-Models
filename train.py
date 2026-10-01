@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -210,6 +211,19 @@ def save_json(path: Path, obj: dict) -> None:
     path.write_text(json.dumps(obj, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def git_commit() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip() or None
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def main() -> None:
     args = parse_args()
     set_seed(args.seed)
@@ -273,6 +287,16 @@ def main() -> None:
     resolved["train_samples"] = len(train_ds)
     resolved["val_samples"] = len(val_ds)
     resolved["parameters"] = sum(p.numel() for p in model.parameters())
+    resolved["git_commit"] = git_commit()
+    resolved["torch_version"] = torch.__version__
+    resolved["cuda_runtime"] = torch.version.cuda
+    if args.model == "segformer_b0":
+        resolved["pretrained_source"] = "nvidia/mit-b0" if cfg["pretrained"] else None
+        try:
+            import transformers
+            resolved["transformers_version"] = transformers.__version__
+        except ImportError:
+            resolved["transformers_version"] = None
     save_json(output_dir / "config.json", resolved)
 
     start_epoch = 1
