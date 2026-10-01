@@ -57,7 +57,8 @@
 | :-- | :-- |
 | **[BENCHMARKS.md](BENCHMARKS.md)** | 区分“论文报告结果”和“本仓库统一协议复现结果”，记录 split / crop / seed / pretraining / TTA 等关键变量 |
 | **[datasets.md](datasets.md)** | 查常用遥感分割数据集、任务类型和下载入口 |
-| **[baselines/](baselines)** | 从 U-Net / SegFormer / SAM wrapper 开始跑通自己的数据 |
+| **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)** | 用统一入口按 smoke → debug → full 三档运行 U-Net / SegFormer，减少长时间训练后才发现问题的风险 |
+| **[baselines/](baselines)** | 查看 U-Net / SegFormer / SAM wrapper 的独立参考实现 |
 | **[CONTRIBUTING.md](CONTRIBUTING.md)** | 新增论文、数据集和结果时的核验标准 |
 
 > **不要直接把不同论文里的 mIoU 当成统一排行榜。** 遥感分割对数据划分、裁剪尺寸、重叠推理、预训练、增强、TTA 和类别映射都很敏感。仓库后续会优先积累**统一协议下可复现**的结果，而不是只堆 SOTA 数字。
@@ -204,7 +205,7 @@
 | 基线 | 类型 | 说明 | 快速验证 |
 | :--- | :-- | :-- | :-- |
 | [`baselines/unet/`](baselines/unet) | CNN | 纯 PyTorch U-Net（含 Dice+CE 损失、二分类/多类） | `python train.py --demo` |
-| [`baselines/segformer/`](baselines/segformer) | Transformer | SegFormer-B0 封装（timm 骨干 + 轻量解码头） | `python train.py --demo` |
+| [`baselines/segformer/`](baselines/segformer) | Transformer | 纯 PyTorch SegFormer（含 tiny CPU demo / B0 配置） | `python train.py --demo` |
 | [`baselines/sam_rs/`](baselines/sam_rs) | Foundation | SAM prompt 分割封装（点/框 prompt → mask） | `python predict.py --demo` |
 
 ```bash
@@ -213,6 +214,27 @@ cd Remote-Sensing-Image-Segmentation-Models/baselines/unet
 pip install -r requirements.txt
 python train.py --demo     # 合成数据，CPU 几秒跑完，输出 mIoU
 ```
+
+### 统一训练入口（v0.3）
+
+独立 baseline 仍然保留；做对比实验时推荐使用仓库根目录的统一入口：
+
+```bash
+# ① smoke：合成小数据，GitHub CI / CPU 快速检查
+python train.py --model unet --mode smoke
+python train.py --model segformer --mode smoke
+
+# ② debug：只取少量真实数据，先检查数据、标签、loss 和 metric
+python train.py --model segformer --mode debug --data /path/to/dataset --num-classes 7
+
+# ③ full：确认无误后再在 GPU 服务器正式训练
+python train.py --model segformer --mode full --data /path/to/dataset \
+  --num-classes 7 --epochs 100 --batch-size 8 --amp
+```
+
+三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)**。
+
+> GitHub Actions **只跑 smoke**，不会下载完整遥感数据集，也不会在 CI 里做长时间训练；真实数据的 debug/full 留给本地或 GPU 服务器。
 
 ---
 

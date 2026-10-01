@@ -5,10 +5,16 @@ on:
     branches: [main]
     paths:
       - "baselines/**"
+      - "rsseg/**"
+      - "train.py"
+      - "evaluate.py"
       - ".github/workflows/baseline-smoke.yml"
   pull_request:
     paths:
       - "baselines/**"
+      - "rsseg/**"
+      - "train.py"
+      - "evaluate.py"
       - ".github/workflows/baseline-smoke.yml"
   workflow_dispatch:
 
@@ -35,11 +41,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch numpy pillow
 
-      - name: U-Net smoke test
-        run: python baselines/unet/train.py --demo --epochs 1 --batch-size 4 --device cpu
+      - name: Unified U-Net smoke test
+        run: python train.py --model unet --mode smoke --device cpu --output /tmp/unet-smoke
 
-      - name: SegFormer smoke test
-        run: python baselines/segformer/train.py --demo --epochs 1 --batch-size 4 --device cpu
+      - name: Unified SegFormer smoke test
+        run: python train.py --model segformer --mode smoke --device cpu --output /tmp/segformer-smoke
 
       - name: SAM-RS wrapper smoke test
         run: python baselines/sam_rs/predict.py --demo
