@@ -345,6 +345,28 @@ def build_scheduler(optimizer, cfg: dict, total_iters: int):
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
 
+def capture_rng_state() -> dict:
+    state = {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch": torch.get_rng_state(),
+        "cuda": None,
+    }
+    if torch.cuda.is_available():
+        state["cuda"] = torch.cuda.get_rng_state_all()
+    return state
+
+
+def restore_rng_state(state: dict | None) -> None:
+    if not state:
+        return
+    random.setstate(state["python"])
+    np.random.set_state(state["numpy"])
+    torch.set_rng_state(state["torch"])
+    if torch.cuda.is_available() and state.get("cuda") is not None:
+        torch.cuda.set_rng_state_all(state["cuda"])
+
+
 def save_json(path: Path, obj: dict) -> None:
     path.write_text(json.dumps(obj, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -448,6 +470,9 @@ def main() -> None:
             optimizer.load_state_dict(checkpoint["optimizer"])
         if scheduler is not None and checkpoint.get("scheduler") is not None:
             scheduler.load_state_dict(checkpoint["scheduler"])
+        if scaler is not None and checkpoint.get("scaler") is not None:
+            scaler.load_state_dict(checkpoint["scaler"])
+        restore_rng_state(checkpoint.get("rng_state"))
         start_epoch = int(checkpoint.get("epoch", 0)) + 1
         best_miou = float(checkpoint.get("best_miou", -1.0))
         best_metrics = checkpoint.get("best_metrics")
@@ -511,6 +536,8 @@ def main() -> None:
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict() if scheduler is not None else None,
+            "scaler": scaler.state_dict() if scaler is not None else None,
+            "rng_state": capture_rng_state(),
             "epoch": epoch,
             "metrics": metrics,
             "best_miou": best_miou,
