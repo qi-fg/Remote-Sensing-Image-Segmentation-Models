@@ -26,14 +26,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from model import SegFormer  # noqa: E402
-
-# Reuse the dataset / loss utilities from the U-Net baseline (keeps the two
-# baselines consistent). Fall back gracefully if paths differ.
 _THIS = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(_THIS, "..", "unet"))
-from train import SyntheticSegData, FolderSegData, dice_loss, mean_iou  # noqa: E402
+_REPO_ROOT = os.path.abspath(os.path.join(_THIS, "..", ".."))
+sys.path.insert(0, _THIS)
+sys.path.insert(0, _REPO_ROOT)
+
+try:
+    from .model import SegFormer  # package import
+except ImportError:
+    from model import SegFormer  # script execution fallback  # noqa: E402
+
+# Reuse the dataset / loss utilities from the U-Net baseline without importing
+# another top-level module named "train" or "model". Those generic names collide
+# when both baselines are loaded in the same Python process.
+from baselines.unet.train import (  # noqa: E402
+    SyntheticSegData,
+    FolderSegData,
+    dice_loss,
+    mean_iou,
+)
 
 
 def train_one_epoch(model, loader, optim, device):
