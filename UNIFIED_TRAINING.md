@@ -189,6 +189,7 @@ runs/...
 - best mIoU
 - **best checkpoint 对应的完整 metrics**
 - final-epoch metrics
+- mF1 / per-class F1
 - OA
 - per-class IoU
 - confusion matrix
