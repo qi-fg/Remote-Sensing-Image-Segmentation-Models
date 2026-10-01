@@ -55,6 +55,7 @@ def train_one_epoch(
     amp: bool,
     ignore_index: int = -1,
     loss_name: str = "ce_dice",
+    scheduler=None,
 ) -> float:
     model.train()
     total_loss = 0.0
@@ -81,6 +82,9 @@ def train_one_epoch(
         else:
             loss.backward()
             optimizer.step()
+
+        if scheduler is not None:
+            scheduler.step()
 
         total_loss += float(loss.detach()) * images.size(0)
 
