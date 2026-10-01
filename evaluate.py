@@ -83,6 +83,7 @@ def main() -> None:
         in_channels=int(saved.get("in_channels", 3)),
         mode=saved.get("mode", "full"),
         variant=saved.get("variant"),
+        pretrained=False,
     ).to(device)
     model.load_state_dict(checkpoint["model"])
 
