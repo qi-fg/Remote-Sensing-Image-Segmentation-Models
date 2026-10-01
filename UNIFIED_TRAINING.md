@@ -2,7 +2,30 @@
 
 这一层的目的不是让完整训练“瞬间变快”，而是减少**跑很久以后才发现代码、数据或指标有问题**的情况。
 
-目前统一入口支持 **U-Net** 和 **SegFormer**。
+目前统一入口支持 **U-Net**、仓库自实现 **SegFormer**，以及用于正式全监督参考的 **standard SegFormer-B0**。
+
+## 两种 SegFormer 的用途
+
+仓库现在故意保留两条 SegFormer 路线：
+
+| CLI | 初始化 | 主要用途 |
+| :-- | :-- | :-- |
+| `--model segformer` | 随机初始化，仓库自包含实现 | 快速开发、消融、检查统一框架 |
+| `--model segformer_b0` | NVIDIA `nvidia/mit-b0` ImageNet-1K 预训练编码器 + 标准 SegFormer 解码头 | **全监督 benchmark / 论文参考** |
+
+标准版首次使用前：
+
+```bash
+pip install -r baselines/segformer_standard/requirements.txt
+```
+
+首次启用预训练时会下载并缓存 `nvidia/mit-b0`。统一训练器会记录 `pretrained`、`loss`、学习率、Git commit、PyTorch/CUDA/Transformers 版本等实验信息。
+
+默认配置上，`segformer_b0` 使用 ImageNet-1K 预训练、AdamW、学习率 `6e-5`、weight decay `0.01` 和 CE loss；这些设置用于建立一个比随机初始化自实现版更合适的全监督参考。正式论文仍应把数据增强、crop、scheduler、训练长度等协议固定并完整报告。
+
+> 点监督论文里，标准 SegFormer-B0 应标为 **Full Supervision / no prompt**。它不是 ReSAM/PointSAM 表中依赖 1/2/3 个点提示的 `Supervised` 方法，不能直接改名替换文献原结果。
+
+---
 
 ## 三种模式
 
@@ -99,7 +122,7 @@ adapter 会自动完成这个映射；no-data 不参与 CE、Dice、mIoU、OA �
 ```bash
 python train.py \
   --dataset loveda \
-  --model segformer \
+  --model segformer_b0 \
   --mode debug \
   --data /data/LoveDA \
   --device cuda
@@ -123,7 +146,7 @@ LoveDA 官方 Train/Val 可以用于开发；Test 标签不公开，正式 Test 
 ```bash
 python train.py \
   --dataset loveda \
-  --model segformer \
+  --model segformer_b0 \
   --mode full \
   --data /data/LoveDA \
   --epochs 100 \
