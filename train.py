@@ -37,7 +37,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-classes", type=int, default=None)
     parser.add_argument("--in-channels", type=int, default=3)
     parser.add_argument("--variant", choices=("tiny", "b0"), default=None,
-                        help="SegFormer variant; smoke always uses tiny")
+                        help="repository SegFormer variant; smoke always uses tiny")
+    parser.add_argument(
+        "--pretrained",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="pretrained initialization; segformer_b0 defaults to NVIDIA ImageNet-1K weights",
+    )
+    parser.add_argument(
+        "--loss",
+        choices=("ce", "ce_dice"),
+        default=None,
+        help="training loss; segformer_b0 defaults to CE, repository models to CE+Dice",
+    )
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
@@ -103,12 +115,28 @@ def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
     if image_size is None and args.mode == "debug":
         image_size = 256
 
-    lr = args.lr if args.lr is not None else (1e-3 if args.model == "unet" else 6e-4)
+    if args.lr is not None:
+        lr = args.lr
+    elif args.model == "unet":
+        lr = 1e-3
+    elif args.model == "segformer_b0":
+        lr = 6e-5
+    else:
+        lr = 6e-4
+
     weight_decay = (
         args.weight_decay
         if args.weight_decay is not None
         else (1e-4 if args.model == "unet" else 1e-2)
     )
+
+    pretrained = args.pretrained
+    if pretrained is None:
+        pretrained = args.model == "segformer_b0"
+
+    loss_name = args.loss
+    if loss_name is None:
+        loss_name = "ce" if args.model == "segformer_b0" else "ce_dice"
 
     amp = args.amp
     if amp is None:
@@ -125,6 +153,8 @@ def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
         "image_size": image_size,
         "lr": lr,
         "weight_decay": weight_decay,
+        "pretrained": pretrained,
+        "loss": loss_name,
         "amp": amp,
         "output": output,
     }
@@ -212,6 +242,7 @@ def main() -> None:
         in_channels=args.in_channels,
         mode=args.mode,
         variant=args.variant,
+        pretrained=bool(cfg["pretrained"]) and not bool(args.resume),
     ).to(device)
 
     optimizer = torch.optim.AdamW(
@@ -219,7 +250,13 @@ def main() -> None:
         lr=cfg["lr"],
         weight_decay=cfg["weight_decay"],
     )
-    scaler = torch.cuda.amp.GradScaler(enabled=True) if cfg["amp"] else None
+    if cfg["amp"]:
+        if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
+            scaler = torch.amp.GradScaler("cuda", enabled=True)
+        else:
+            scaler = torch.cuda.amp.GradScaler(enabled=True)
+    else:
+        scaler = None
 
     ignore_index = LOVEDA_IGNORE_INDEX if args.dataset == "loveda" else -1
     class_names = LOVEDA_CLASS_NAMES if args.dataset == "loveda" else None
@@ -251,7 +288,8 @@ def main() -> None:
 
     print(
         f"dataset={args.dataset} model={args.model} mode={args.mode} "
-        f"device={device} amp={cfg['amp']} params={resolved['parameters']/1e6:.3f}M "
+        f"device={device} amp={cfg['amp']} pretrained={cfg['pretrained']} "
+        f"loss={cfg['loss']} params={resolved['parameters']/1e6:.3f}M "
         f"train={len(train_ds)} val={len(val_ds)}"
     )
 
@@ -265,6 +303,7 @@ def main() -> None:
             scaler,
             cfg["amp"],
             ignore_index=ignore_index,
+            loss_name=cfg["loss"],
         )
         metrics = evaluate(
             model,
