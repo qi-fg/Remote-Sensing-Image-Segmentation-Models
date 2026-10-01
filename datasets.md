@@ -24,6 +24,7 @@
 | **iSAID** | 655,451 实例 | 基于 DOTA 像素级标注 | [🔗](https://captain-whu.github.io/iSAID/) |
 | **NWPU VHR-10** | 800 图，10 类 | 小规模、经典目标检测/分割集 | [🔗](https://github.com/chaozhong2010/VHR-10_dataset_coco) |
 | **DOTA-v2.0** | 11,268 图，18 类 | 定向目标检测（SAMRS 转换源） | [🔗](https://captain-whu.github.io/DOTA/) |
+| **HRSID** | 5,604 图 / 16,951 船舶实例 | 高分辨率 SAR，0.5 / 1 / 3 m；检测 + 语义/实例分割 | [🔗](https://github.com/chaozhong2010/HRSID) |
 
 ## 🏗️ 建筑物 / 道路提取（Building & Road Extraction）
 
