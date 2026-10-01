@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from itertools import zip_longest
+import random
 from pathlib import Path
 from typing import Optional, Sequence
 
 import numpy as np
 import torch
+from PIL import Image, ImageEnhance
 from torch.utils.data import Dataset
 
 
@@ -97,8 +99,6 @@ class PairedSegDataset(Dataset):
         return len(self.pairs)
 
     def __getitem__(self, index: int):
-        from PIL import Image
-
         image_path, mask_path = self.pairs[index]
         image = Image.open(image_path).convert("RGB")
         mask = Image.open(mask_path)
@@ -122,6 +122,114 @@ class PairedSegDataset(Dataset):
         return image_t, mask_t
 
 
+def _resize_for_loveda_recipe(
+    image: Image.Image,
+    mask: Image.Image,
+    crop_size: int,
+    ratio: float,
+) -> tuple[Image.Image, Image.Image]:
+    """Mimic MMSeg's (2048, 512) keep-ratio scaling for a 512 crop.
+
+    Generalized as max_long_edge=4*crop_size and max_short_edge=crop_size,
+    followed by the sampled ratio. For square LoveDA tiles this yields a
+    sampled side length of crop_size * ratio.
+    """
+    width, height = image.size
+    long_edge = max(width, height)
+    short_edge = min(width, height)
+    max_long = 4.0 * crop_size * ratio
+    max_short = float(crop_size) * ratio
+    scale = min(max_long / max(long_edge, 1), max_short / max(short_edge, 1))
+    new_size = (
+        max(1, int(round(width * scale))),
+        max(1, int(round(height * scale))),
+    )
+    return (
+        image.resize(new_size, Image.Resampling.BILINEAR),
+        mask.resize(new_size, Image.Resampling.NEAREST),
+    )
+
+
+def _pad_to_crop(
+    image: Image.Image,
+    mask: Image.Image,
+    crop_size: int,
+) -> tuple[Image.Image, Image.Image]:
+    width, height = image.size
+    target_w = max(width, crop_size)
+    target_h = max(height, crop_size)
+    if (target_w, target_h) == (width, height):
+        return image, mask
+
+    padded_image = Image.new("RGB", (target_w, target_h), color=(0, 0, 0))
+    padded_mask = Image.new("L", (target_w, target_h), color=0)
+    padded_image.paste(image, (0, 0))
+    padded_mask.paste(mask, (0, 0))
+    return padded_image, padded_mask
+
+
+def _random_crop_loveda(
+    image: Image.Image,
+    mask: Image.Image,
+    crop_size: int,
+    cat_max_ratio: float,
+    attempts: int = 10,
+) -> tuple[Image.Image, Image.Image]:
+    width, height = image.size
+    if width < crop_size or height < crop_size:
+        image, mask = _pad_to_crop(image, mask, crop_size)
+        width, height = image.size
+
+    last_box = (0, 0, crop_size, crop_size)
+    for _ in range(max(1, attempts)):
+        left = random.randint(0, width - crop_size)
+        top = random.randint(0, height - crop_size)
+        box = (left, top, left + crop_size, top + crop_size)
+        last_box = box
+
+        if cat_max_ratio >= 1.0:
+            break
+
+        crop_mask = np.asarray(mask.crop(box))
+        labels, counts = np.unique(crop_mask, return_counts=True)
+        counts = counts[labels != 0]  # LoveDA raw 0 is no-data / ignore.
+        if len(counts) > 1 and counts.max() / counts.sum() < cat_max_ratio:
+            break
+
+    return image.crop(last_box), mask.crop(last_box)
+
+
+def _photometric_distortion(image: Image.Image) -> Image.Image:
+    """Approximate MMSeg PhotoMetricDistortion without adding OpenCV."""
+    arr = np.asarray(image, dtype=np.float32)
+
+    if random.random() < 0.5:
+        arr += random.uniform(-32.0, 32.0)
+
+    contrast_first = random.random() < 0.5
+    if contrast_first and random.random() < 0.5:
+        arr *= random.uniform(0.5, 1.5)
+
+    image = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), mode="RGB")
+
+    if random.random() < 0.5:
+        image = ImageEnhance.Color(image).enhance(random.uniform(0.5, 1.5))
+
+    if random.random() < 0.5:
+        hsv = np.asarray(image.convert("HSV"), dtype=np.uint8).copy()
+        shift = int(round(random.uniform(-18.0, 18.0) / 360.0 * 255.0))
+        hue = (hsv[..., 0].astype(np.int16) + shift) % 256
+        hsv[..., 0] = hue.astype(np.uint8)
+        image = Image.fromarray(hsv, mode="HSV").convert("RGB")
+
+    if not contrast_first and random.random() < 0.5:
+        arr = np.asarray(image, dtype=np.float32)
+        arr *= random.uniform(0.5, 1.5)
+        image = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), mode="RGB")
+
+    return image
+
+
 class LoveDADataset(Dataset):
     """LoveDA semantic-segmentation adapter using official folder and label rules.
 
@@ -141,7 +249,23 @@ class LoveDADataset(Dataset):
         domains: Sequence[str] = ("urban", "rural"),
         image_size: Optional[int] = None,
         max_samples: Optional[int] = None,
+        crop_size: Optional[int] = None,
+        random_scale_range: Optional[tuple[float, float]] = None,
+        flip_prob: float = 0.0,
+        photometric_distortion: bool = False,
+        cat_max_ratio: float = 1.0,
     ) -> None:
+        if image_size is not None and crop_size is not None:
+            raise ValueError("Use either image_size or crop_size augmentation, not both.")
+        if random_scale_range is not None:
+            lo, hi = random_scale_range
+            if lo <= 0 or hi < lo:
+                raise ValueError("random_scale_range must satisfy 0 < min <= max.")
+        if not 0.0 <= flip_prob <= 1.0:
+            raise ValueError("flip_prob must be in [0, 1].")
+        if not 0.0 < cat_max_ratio <= 1.0:
+            raise ValueError("cat_max_ratio must be in (0, 1].")
+
         split_key = split.lower()
         if split_key not in self.SPLIT_DIRS:
             raise ValueError("LoveDA training adapter supports split='train' or 'val'.")
@@ -194,6 +318,11 @@ class LoveDADataset(Dataset):
 
         self.pairs = pairs
         self.image_size = image_size
+        self.crop_size = crop_size
+        self.random_scale_range = random_scale_range
+        self.flip_prob = float(flip_prob)
+        self.photometric_distortion = bool(photometric_distortion)
+        self.cat_max_ratio = float(cat_max_ratio)
         self.class_names = LOVEDA_CLASS_NAMES
         self.num_classes = LOVEDA_NUM_CLASSES
         self.ignore_index = LOVEDA_IGNORE_INDEX
@@ -202,8 +331,6 @@ class LoveDADataset(Dataset):
         return len(self.pairs)
 
     def __getitem__(self, index: int):
-        from PIL import Image
-
         image_path, mask_path, _domain = self.pairs[index]
         image = Image.open(image_path).convert("RGB")
         mask = Image.open(mask_path)
@@ -212,6 +339,21 @@ class LoveDADataset(Dataset):
             size = (self.image_size, self.image_size)
             image = image.resize(size, Image.Resampling.BILINEAR)
             mask = mask.resize(size, Image.Resampling.NEAREST)
+        elif self.crop_size is not None:
+            ratio = 1.0
+            if self.random_scale_range is not None:
+                ratio = random.uniform(*self.random_scale_range)
+            image, mask = _resize_for_loveda_recipe(
+                image, mask, self.crop_size, ratio
+            )
+            image, mask = _random_crop_loveda(
+                image, mask, self.crop_size, self.cat_max_ratio
+            )
+            if random.random() < self.flip_prob:
+                image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+                mask = mask.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            if self.photometric_distortion:
+                image = _photometric_distortion(image)
 
         image_np = np.asarray(image, dtype=np.float32) / 255.0
         raw_mask = np.asarray(mask)

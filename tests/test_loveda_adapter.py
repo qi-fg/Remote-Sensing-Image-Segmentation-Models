@@ -50,6 +50,28 @@ class LoveDAAdapterTest(unittest.TestCase):
             self.assertEqual(int(mask[0, 1]), 0)
             self.assertEqual(int(mask[1, 3]), 6)
 
+
+    def test_loveda_recipe_crop_preserves_shape_and_labels(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_sample(root, "Train", "Urban", "urban.png")
+
+            dataset = LoveDADataset(
+                str(root),
+                "train",
+                domains=("urban",),
+                crop_size=4,
+                random_scale_range=(0.5, 0.5),
+                flip_prob=0.0,
+                photometric_distortion=False,
+                cat_max_ratio=0.75,
+            )
+            image, mask = dataset[0]
+            self.assertEqual(tuple(image.shape), (3, 4, 4))
+            self.assertEqual(tuple(mask.shape), (4, 4))
+            self.assertTrue(set(mask.unique().tolist()).issubset(set(range(-1, 7))))
+            self.assertIn(-1, mask.unique().tolist())
+
     def test_ignore_pixels_are_safe_in_dice(self) -> None:
         logits = torch.randn(1, 7, 2, 2, requires_grad=True)
         target = torch.tensor([[[-1, 0], [1, 6]]], dtype=torch.long)

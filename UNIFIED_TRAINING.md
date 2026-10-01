@@ -21,7 +21,7 @@ pip install -r baselines/segformer_standard/requirements.txt
 
 首次启用预训练时会下载并缓存 `nvidia/mit-b0`。统一训练器会记录 `pretrained`、`loss`、学习率、Git commit、PyTorch/CUDA/Transformers 版本等实验信息。
 
-默认配置上，`segformer_b0` 使用 ImageNet-1K 预训练、AdamW、学习率 `6e-5`、weight decay `0.01` 和 CE loss；这些设置用于建立一个比随机初始化自实现版更合适的全监督参考。正式论文仍应把数据增强、crop、scheduler、训练长度等协议固定并完整报告。
+默认配置上，`segformer_b0` 使用 ImageNet-1K 预训练、AdamW、学习率 `6e-5`、weight decay `0.01` 和 CE loss。v0.6 进一步提供命名协议 `loveda_segformer_b0_512`，把 512 crop、增强、poly scheduler、warmup、验证间隔和 optimizer param groups 固定下来。完整定义见 **[LOVEDA_SEGFORMER_PROTOCOL.md](LOVEDA_SEGFORMER_PROTOCOL.md)**。
 
 > 点监督论文里，标准 SegFormer-B0 应标为 **Full Supervision / no prompt**。它不是 ReSAM/PointSAM 表中依赖 1/2/3 个点提示的 `Supervised` 方法，不能直接改名替换文献原结果。
 
@@ -141,22 +141,36 @@ LoveDA 官方 Train/Val 可以用于开发；Test 标签不公开，正式 Test 
 
 ---
 
-## 3. Full：确认无误后再正式跑
+## 3. Full：使用命名协议正式跑
+
+LoveDA + SegFormer-B0 的推荐受控入口是：
 
 ```bash
 python train.py \
   --dataset loveda \
   --model segformer_b0 \
   --mode full \
+  --recipe loveda_segformer_b0_512 \
   --data /data/LoveDA \
-  --epochs 100 \
-  --batch-size 8 \
-  --amp \
   --device cuda \
-  --output runs/loveda-segformer-b0
+  --seed 0 \
+  --output runs/loveda-segformer_b0-full-512-seed0
 ```
 
-`full` 默认不强制 resize，避免无意中改变正式实验协议。正式 benchmark 应明确记录 crop/resize、split、pretraining、augmentation、TTA 等设置。
+该 recipe 默认使用 512×512 random crop、0.5–2.0 random scale、`cat_max_ratio=0.75`、horizontal flip、photometric distortion、AdamW、SegFormer-style head LR multiplier、linear warmup + poly LR，并在完整原分辨率 Val 上每 5 epochs 评估一次。它是**仓库控制协议**，不是对某篇论文训练 schedule 的逐项复刻。
+
+正式开长跑前，建议先执行协议预检：
+
+```bash
+python train.py \
+  --dataset loveda --model segformer_b0 --mode debug \
+  --recipe loveda_segformer_b0_512 \
+  --data /data/LoveDA --epochs 2 \
+  --debug-train-samples 64 --debug-val-samples 16 \
+  --batch-size 4 --device cuda
+```
+
+完整参数、来源与论文报告口径见 **[LOVEDA_SEGFORMER_PROTOCOL.md](LOVEDA_SEGFORMER_PROTOCOL.md)**。没有指定 recipe 的普通 `full` 仍保持通用行为，不会偷偷套用 LoveDA 专用增强。
 
 ## 自动保存
 
@@ -172,7 +186,10 @@ runs/...
 
 `results.json` 包含：
 
-- mIoU
+- best mIoU
+- **best checkpoint 对应的完整 metrics**
+- final-epoch metrics
+- mF1 / per-class F1
 - OA
 - per-class IoU
 - confusion matrix
@@ -198,8 +215,8 @@ python evaluate.py \
 
 ## 当前边界
 
-当前 LoveDA adapter 解决的是**官方目录读取、标签映射、Urban/Rural 选择和 ignore 像素处理**。它没有声称复现某篇论文的完整训练 recipe。
+当前 LoveDA adapter 解决官方目录读取、标签映射、Urban/Rural 选择和 ignore 像素处理；命名 recipe `loveda_segformer_b0_512` 进一步固定第一套 repository-controlled 全监督协议。它仍**没有声称复现某篇论文的完整训练 recipe**。
 
-正式对比时还需要明确并固定：crop/resize、数据增强、预训练权重、学习率策略、batch size、训练轮数、TTA 等。尤其不要把 `debug` 的 256×256 resize 结果与论文表格直接比较。
+尤其不要把普通 `debug` 的 256×256 resize 结果与论文表格直接比较；正式对比还应固定 seed 集合、硬件/软件环境、是否 TTA，并保证点监督方法与全监督参考使用同一 Train/Val 数据划分和评测代码。
 
 LoveDA 数据用于学术研究时还应遵守其数据许可与 Google Earth 相关使用条款。

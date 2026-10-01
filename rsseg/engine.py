@@ -55,6 +55,7 @@ def train_one_epoch(
     amp: bool,
     ignore_index: int = -1,
     loss_name: str = "ce_dice",
+    scheduler=None,
 ) -> float:
     model.train()
     total_loss = 0.0
@@ -81,6 +82,9 @@ def train_one_epoch(
         else:
             loss.backward()
             optimizer.step()
+
+        if scheduler is not None:
+            scheduler.step()
 
         total_loss += float(loss.detach()) * images.size(0)
 
@@ -123,13 +127,23 @@ def evaluate(
     per_class_iou = torch.full((num_classes,), float("nan"))
     per_class_iou[valid_classes] = tp[valid_classes] / denom[valid_classes]
     miou = per_class_iou[valid_classes].mean().item() if valid_classes.any() else 0.0
+
+    f1_denom = confusion.sum(1).float() + confusion.sum(0).float()
+    valid_f1 = f1_denom > 0
+    per_class_f1 = torch.full((num_classes,), float("nan"))
+    per_class_f1[valid_f1] = 2.0 * tp[valid_f1] / f1_denom[valid_f1]
+    mf1 = per_class_f1[valid_f1].mean().item() if valid_f1.any() else 0.0
+
     oa = tp.sum().item() / max(confusion.sum().item(), 1)
 
     iou_values = [None if torch.isnan(v) else float(v) for v in per_class_iou]
+    f1_values = [None if torch.isnan(v) else float(v) for v in per_class_f1]
     result = {
         "miou": float(miou),
+        "mf1": float(mf1),
         "oa": float(oa),
         "per_class_iou": iou_values,
+        "per_class_f1": f1_values,
         "confusion_matrix": confusion.tolist(),
     }
 
@@ -138,6 +152,9 @@ def evaluate(
             raise ValueError("class_names length must equal num_classes")
         result["per_class_iou_named"] = {
             str(name): value for name, value in zip(class_names, iou_values)
+        }
+        result["per_class_f1_named"] = {
+            str(name): value for name, value in zip(class_names, f1_values)
         }
 
     return result
