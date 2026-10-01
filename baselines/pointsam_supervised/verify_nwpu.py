@@ -56,6 +56,15 @@ def main() -> None:
     if overlap:
         failures.append(f"train/val overlap is not empty: {sorted(overlap)[:10]}")
 
+    expected_names = {f"{index:03d}.jpg" for index in range(1, 651)}
+    if union != expected_names:
+        unexpected = sorted(union - expected_names)
+        absent = sorted(expected_names - union)
+        failures.append(
+            "annotation filenames are not exactly 001.jpg ... 650.jpg; "
+            f"unexpected={unexpected[:10]} absent={absent[:10]}"
+        )
+
     missing = []
     if not image_dir.is_dir():
         failures.append(f"image directory does not exist: {image_dir}")
