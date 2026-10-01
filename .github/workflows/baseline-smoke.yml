@@ -46,6 +46,12 @@ jobs:
       - name: LoveDA adapter and training-recipe tests
         run: python -m unittest tests.test_loveda_adapter tests.test_training_recipe
 
+      - name: PointSAM reproduction adapter syntax checks
+        run: |
+          bash -n baselines/pointsam_supervised/setup_upstream.sh
+          bash -n baselines/pointsam_supervised/run_nwpu_supervised.sh
+          python -m py_compile             baselines/pointsam_supervised/verify_nwpu.py             baselines/pointsam_supervised/collect_results.py
+
       - name: Unified U-Net smoke test
         run: python train.py --model unet --mode smoke --device cpu --output /tmp/unet-smoke
 
