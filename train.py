@@ -58,6 +58,8 @@ def parse_args() -> argparse.Namespace:
         help="training loss; segformer_b0 defaults to CE, repository models to CE+Dice",
     )
     parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--eval-every", type=int, default=None,
+                        help="validation interval in epochs")
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--val-batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
@@ -127,6 +129,12 @@ def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
     epochs = args.epochs
     if epochs is None:
         epochs = {"smoke": 1, "debug": 3, "full": 100}[args.mode]
+
+    eval_every = args.eval_every
+    if eval_every is None:
+        eval_every = 5 if recipe == "loveda_segformer_b0_512" and args.mode == "full" else 1
+    if eval_every < 1:
+        raise SystemExit("--eval-every must be >= 1.")
 
     batch_size = args.batch_size
     if batch_size is None:
@@ -200,6 +208,7 @@ def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
 
     return {
         "epochs": epochs,
+        "eval_every": eval_every,
         "batch_size": batch_size,
         "val_batch_size": val_batch_size,
         "num_workers": num_workers,
@@ -465,26 +474,38 @@ def main() -> None:
             loss_name=cfg["loss"],
             scheduler=scheduler,
         )
-        metrics = evaluate(
-            model,
-            val_loader,
-            device,
-            num_classes,
-            cfg["amp"],
-            class_names=class_names,
-        )
-        final_metrics = metrics
 
-        print(
-            f"epoch {epoch:3d}/{cfg['epochs']} "
-            f"loss={loss:.4f} mIoU={metrics['miou']:.4f} OA={metrics['oa']:.4f} "
-            f"lr={optimizer.param_groups[0]['lr']:.2e}"
+        should_evaluate = (
+            epoch % cfg["eval_every"] == 0 or epoch == cfg["epochs"]
         )
+        metrics = None
+        is_best = False
+        if should_evaluate:
+            metrics = evaluate(
+                model,
+                val_loader,
+                device,
+                num_classes,
+                cfg["amp"],
+                class_names=class_names,
+            )
+            final_metrics = metrics
+            is_best = metrics["miou"] > best_miou
+            if is_best:
+                best_miou = metrics["miou"]
+                best_metrics = metrics
 
-        is_best = metrics["miou"] > best_miou
-        if is_best:
-            best_miou = metrics["miou"]
-            best_metrics = metrics
+            print(
+                f"epoch {epoch:3d}/{cfg['epochs']} "
+                f"loss={loss:.4f} mIoU={metrics['miou']:.4f} OA={metrics['oa']:.4f} "
+                f"lr={optimizer.param_groups[0]['lr']:.2e}"
+            )
+        else:
+            print(
+                f"epoch {epoch:3d}/{cfg['epochs']} "
+                f"loss={loss:.4f} val=skipped "
+                f"lr={optimizer.param_groups[0]['lr']:.2e}"
+            )
 
         checkpoint = {
             "model": model.state_dict(),
