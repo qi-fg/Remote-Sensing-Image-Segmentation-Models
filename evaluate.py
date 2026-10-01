@@ -8,7 +8,12 @@ import json
 import torch
 from torch.utils.data import DataLoader
 
-from rsseg.data import PairedSegDataset
+from rsseg.data import (
+    LOVEDA_CLASS_NAMES,
+    LoveDADataset,
+    PairedSegDataset,
+    loveda_domains,
+)
 from rsseg.engine import evaluate
 from rsseg.models import SUPPORTED_MODELS, build_model
 
@@ -18,6 +23,8 @@ def main() -> None:
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--data", required=True)
     parser.add_argument("--split", default="val")
+    parser.add_argument("--dataset", choices=("generic", "loveda"), default=None)
+    parser.add_argument("--domain", choices=("both", "urban", "rural"), default=None)
     parser.add_argument("--model", choices=SUPPORTED_MODELS, default=None)
     parser.add_argument("--num-classes", type=int, default=None)
     parser.add_argument("--image-size", type=int, default=None)
@@ -39,6 +46,9 @@ def main() -> None:
     if model_name is None:
         raise SystemExit("Checkpoint has no model metadata; pass --model.")
 
+    dataset_name = args.dataset or saved.get("dataset", "generic")
+    domain = args.domain or saved.get("domain", "both")
+
     num_classes = args.num_classes or saved.get("num_classes")
     if num_classes is None:
         raise SystemExit("Checkpoint has no class-count metadata; pass --num-classes.")
@@ -47,7 +57,18 @@ def main() -> None:
     if image_size is None:
         image_size = saved.get("image_size")
 
-    dataset = PairedSegDataset(args.data, args.split, image_size=image_size)
+    if dataset_name == "loveda":
+        dataset = LoveDADataset(
+            args.data,
+            args.split,
+            domains=loveda_domains(domain),
+            image_size=image_size,
+        )
+        class_names = LOVEDA_CLASS_NAMES
+    else:
+        dataset = PairedSegDataset(args.data, args.split, image_size=image_size)
+        class_names = saved.get("class_names")
+
     loader = DataLoader(
         dataset,
         batch_size=args.batch_size,
@@ -66,7 +87,14 @@ def main() -> None:
     model.load_state_dict(checkpoint["model"])
 
     use_amp = bool(saved.get("amp", False)) and device.type == "cuda"
-    metrics = evaluate(model, loader, device, int(num_classes), amp=use_amp)
+    metrics = evaluate(
+        model,
+        loader,
+        device,
+        int(num_classes),
+        amp=use_amp,
+        class_names=class_names,
+    )
     print(json.dumps(metrics, indent=2, ensure_ascii=False))
 
 
