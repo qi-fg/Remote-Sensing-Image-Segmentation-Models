@@ -55,18 +55,18 @@ def main() -> None:
             continue
 
         target = PAPER_TARGETS[points]
+        iou_percent = best["iou"] * 100.0 if best["iou"] <= 1.0 else best["iou"]
+        f1_percent = best["f1"] * 100.0 if best["f1"] <= 1.0 else best["f1"]
         results[str(points)] = {
             "best_epoch": best["epoch"],
-            "iou": best["iou"],
-            "f1": best["f1"],
-            "paper_target_iou": target["iou"],
-            "paper_target_f1": target["f1"],
-            "delta_iou": best["iou"] * 100.0 - target["iou"]
-            if best["iou"] <= 1.0
-            else best["iou"] - target["iou"],
-            "delta_f1": best["f1"] * 100.0 - target["f1"]
-            if best["f1"] <= 1.0
-            else best["f1"] - target["f1"],
+            "iou_raw": best["iou"],
+            "f1_raw": best["f1"],
+            "iou_percent": iou_percent,
+            "f1_percent": f1_percent,
+            "paper_target_iou_percent": target["iou"],
+            "paper_target_f1_percent": target["f1"],
+            "delta_iou_points": iou_percent - target["iou"],
+            "delta_f1_points": f1_percent - target["f1"],
         }
 
     payload = {
