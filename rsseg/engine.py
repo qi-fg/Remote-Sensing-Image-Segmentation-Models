@@ -54,6 +54,7 @@ def train_one_epoch(
     scaler,
     amp: bool,
     ignore_index: int = -1,
+    loss_name: str = "ce_dice",
 ) -> float:
     model.train()
     total_loss = 0.0
@@ -65,8 +66,13 @@ def train_one_epoch(
 
         with _autocast(device, amp):
             logits = model(images)
-            loss = F.cross_entropy(logits, masks, ignore_index=ignore_index)
-            loss = loss + dice_loss(logits, masks, ignore_index=ignore_index)
+            ce = F.cross_entropy(logits, masks, ignore_index=ignore_index)
+            if loss_name == "ce":
+                loss = ce
+            elif loss_name == "ce_dice":
+                loss = ce + dice_loss(logits, masks, ignore_index=ignore_index)
+            else:
+                raise ValueError(f"Unknown loss '{loss_name}'. Use ce or ce_dice.")
 
         if scaler is not None:
             scaler.scale(loss).backward()
