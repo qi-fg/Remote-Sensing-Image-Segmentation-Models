@@ -29,7 +29,7 @@ These are the results that can eventually support fair comparison.
 | Method | Dataset | Seed(s) | Crop | Epochs | Pretraining | mIoU | Params | Config / commit |
 | :-- | :-- | :-- | :-- | --: | :-- | --: | --: | :-- |
 | U-Net | TBD | 0/1/2 | TBD | TBD | none | — | — | TBD |
-| SegFormer | TBD | 0/1/2 | TBD | TBD | TBD | — | — | TBD |
+| SegFormer-B0 | LoveDA | 0/1/2 | 512 | 100 | ImageNet-1K (`nvidia/mit-b0`) | — | 3.716M | `loveda_segformer_b0_512` |
 
 A controlled result should record:
 
@@ -108,3 +108,5 @@ Recommended `results.json` fields:
 ```
 
 This keeps future thesis experiments, ablations, and public benchmark results traceable instead of leaving numbers only in a README or spreadsheet.
+
+The first named repository-controlled protocol is documented in **[LOVEDA_SEGFORMER_PROTOCOL.md](LOVEDA_SEGFORMER_PROTOCOL.md)**. Its row should remain scoreless until a full controlled run is completed; debug/preflight numbers must not be copied into the benchmark table.
