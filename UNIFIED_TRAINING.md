@@ -57,14 +57,75 @@ python train.py --model unet --mode debug --data /data/my_dataset \
   --num-classes 7 --debug-train-samples 256 --debug-val-samples 128
 ```
 
+## LoveDA：直接读取官方目录
+
+LoveDA 不需要你手工整理成通用 `train/images` 结构。统一入口可以直接读取官方解压后的目录：
+
+```text
+LoveDA/
+├── Train/
+│   ├── Urban/
+│   │   ├── images_png/
+│   │   └── masks_png/
+│   └── Rural/
+│       ├── images_png/
+│       └── masks_png/
+└── Val/
+    ├── Urban/
+    │   ├── images_png/
+    │   └── masks_png/
+    └── Rural/
+        ├── images_png/
+        └── masks_png/
+```
+
+官方原始 mask 的标签是：
+
+| 原始值 | 训练值 | 类别 |
+| :--: | :--: | :-- |
+| 0 | -1 | no-data / ignore |
+| 1 | 0 | background |
+| 2 | 1 | building |
+| 3 | 2 | road |
+| 4 | 3 | water |
+| 5 | 4 | barren |
+| 6 | 5 | forest |
+| 7 | 6 | agricultural |
+
+adapter 会自动完成这个映射；no-data 不参与 CE、Dice、mIoU、OA 或混淆矩阵。
+
+先跑 debug：
+
+```bash
+python train.py \
+  --dataset loveda \
+  --model segformer \
+  --mode debug \
+  --data /data/LoveDA \
+  --device cuda
+```
+
+LoveDA 的类别数会自动设为 7，不需要再写 `--num-classes 7`。默认同时读取 Urban 和 Rural；也可以只检查一个域：
+
+```bash
+python train.py --dataset loveda --model unet --mode debug \
+  --data /data/LoveDA --domain urban --device cuda
+```
+
+> `debug` 默认 resize 到 256×256，只用于快速排错，不应该把它的精度当正式 benchmark 结果。
+
+LoveDA 官方 Train/Val 可以用于开发；Test 标签不公开，正式 Test 分数需要通过挑战赛评测。因此当前训练/评测 adapter 只支持 `train` / `val`。
+
+---
+
 ## 3. Full：确认无误后再正式跑
 
 ```bash
 python train.py \
+  --dataset loveda \
   --model segformer \
   --mode full \
-  --data /data/my_dataset \
-  --num-classes 7 \
+  --data /data/LoveDA \
   --epochs 100 \
   --batch-size 8 \
   --amp \
@@ -114,4 +175,8 @@ python evaluate.py \
 
 ## 当前边界
 
-这一版先统一**训练/评测机制**，还没有把 LoveDA 的原始官方目录结构硬编码进来。下一步会单独增加 LoveDA adapter，并明确官方 train/val/test 与类别映射；这样不会为了“方便”偷偷改变实验协议。
+当前 LoveDA adapter 解决的是**官方目录读取、标签映射、Urban/Rural 选择和 ignore 像素处理**。它没有声称复现某篇论文的完整训练 recipe。
+
+正式对比时还需要明确并固定：crop/resize、数据增强、预训练权重、学习率策略、batch size、训练轮数、TTA 等。尤其不要把 `debug` 的 256×256 resize 结果与论文表格直接比较。
+
+LoveDA 数据用于学术研究时还应遵守其数据许可与 Google Earth 相关使用条款。

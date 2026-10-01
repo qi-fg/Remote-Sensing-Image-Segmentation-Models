@@ -224,15 +224,15 @@ python train.py --demo     # 合成数据，CPU 几秒跑完，输出 mIoU
 python train.py --model unet --mode smoke
 python train.py --model segformer --mode smoke
 
-# ② debug：只取少量真实数据，先检查数据、标签、loss 和 metric
-python train.py --model segformer --mode debug --data /path/to/dataset --num-classes 7
+# ② debug：LoveDA 官方目录，自动处理 7 类 + no-data ignore
+python train.py --dataset loveda --model segformer --mode debug --data /data/LoveDA
 
 # ③ full：确认无误后再在 GPU 服务器正式训练
-python train.py --model segformer --mode full --data /path/to/dataset \
-  --num-classes 7 --epochs 100 --batch-size 8 --amp
+python train.py --dataset loveda --model segformer --mode full --data /data/LoveDA \
+  --epochs 100 --batch-size 8 --amp
 ```
 
-三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)**。
+三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)**。
 
 > GitHub Actions **只跑 smoke**，不会下载完整遥感数据集，也不会在 CI 里做长时间训练；真实数据的 debug/full 留给本地或 GPU 服务器。
 
