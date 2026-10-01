@@ -216,7 +216,7 @@ pip install -r requirements.txt
 python train.py --demo     # 合成数据，CPU 几秒跑完，输出 mIoU
 ```
 
-### 统一训练入口（v0.3）
+### 统一训练入口（v0.6）
 
 独立 baseline 仍然保留；做对比实验时推荐使用仓库根目录的统一入口：
 
@@ -232,12 +232,12 @@ python train.py --dataset loveda --model segformer --mode debug --data /data/Lov
 pip install -r baselines/segformer_standard/requirements.txt
 python train.py --dataset loveda --model segformer_b0 --mode debug --data /data/LoveDA --device cuda
 
-# ④ full：确认协议后再在 GPU 服务器正式训练
-python train.py --dataset loveda --model segformer_b0 --mode full --data /data/LoveDA \
-  --epochs 100 --batch-size 8 --amp
+# ④ full：LoveDA 受控 512 协议
+python train.py --dataset loveda --model segformer_b0 --mode full \
+  --recipe loveda_segformer_b0_512 --data /data/LoveDA --device cuda --seed 0
 ```
 
-三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**`segformer` 是仓库自实现开发基线；`segformer_b0` 是标准架构 + NVIDIA ImageNet-1K 预训练的全监督参考。详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)**。
+三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**`segformer` 是仓库自实现开发基线；`segformer_b0` 是标准架构 + NVIDIA ImageNet-1K 预训练的全监督参考。v0.6 新增 `loveda_segformer_b0_512` 命名协议，用于固定 512 crop、增强、warmup + poly LR 和验证设置。详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)** 与 **[LOVEDA_SEGFORMER_PROTOCOL.md](LOVEDA_SEGFORMER_PROTOCOL.md)**。
 
 > GitHub Actions **只跑 smoke**，不会下载完整遥感数据集，也不会在 CI 里做长时间训练；真实数据的 debug/full 留给本地或 GPU 服务器。
 
