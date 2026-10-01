@@ -1,18 +1,4 @@
-"""Unified training entry for remote-sensing segmentation baselines.
-
-Examples
---------
-Fast code check (no dataset, CPU-friendly):
-    python train.py --model unet --mode smoke
-    python train.py --model segformer --mode smoke
-
-Short real-data check:
-    python train.py --model segformer --mode debug --data /path/to/dataset --num-classes 7
-
-Full server run:
-    python train.py --model segformer --mode full --data /path/to/dataset \
-        --num-classes 7 --epochs 100 --batch-size 8 --amp
-"""
+"""Unified training entry for remote-sensing segmentation baselines."""
 
 from __future__ import annotations
 
@@ -25,7 +11,15 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from rsseg.data import PairedSegDataset, SyntheticSegDataset
+from rsseg.data import (
+    LOVEDA_CLASS_NAMES,
+    LOVEDA_IGNORE_INDEX,
+    LOVEDA_NUM_CLASSES,
+    LoveDADataset,
+    PairedSegDataset,
+    SyntheticSegDataset,
+    loveda_domains,
+)
 from rsseg.engine import evaluate, train_one_epoch
 from rsseg.models import SUPPORTED_MODELS, build_model
 
@@ -34,10 +28,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Unified RS segmentation trainer")
     parser.add_argument("--model", choices=SUPPORTED_MODELS, required=True)
     parser.add_argument("--mode", choices=("smoke", "debug", "full"), default="smoke")
+    parser.add_argument("--dataset", choices=("generic", "loveda"), default="generic")
     parser.add_argument("--data", type=str, default=None, help="dataset root for debug/full")
     parser.add_argument("--train-split", default="train")
     parser.add_argument("--val-split", default="val")
-    parser.add_argument("--num-classes", type=int, default=2)
+    parser.add_argument("--domain", choices=("both", "urban", "rural"), default="both",
+                        help="LoveDA domain selection")
+    parser.add_argument("--num-classes", type=int, default=None)
     parser.add_argument("--in-channels", type=int, default=3)
     parser.add_argument("--variant", choices=("tiny", "b0"), default=None,
                         help="SegFormer variant; smoke always uses tiny")
@@ -78,6 +75,17 @@ def resolve_device(value: str) -> torch.device:
     return torch.device(value)
 
 
+def resolve_num_classes(args: argparse.Namespace) -> int:
+    if args.dataset == "loveda":
+        if args.num_classes not in (None, LOVEDA_NUM_CLASSES):
+            raise SystemExit(
+                f"LoveDA has {LOVEDA_NUM_CLASSES} classes after label remapping; "
+                f"got --num-classes {args.num_classes}."
+            )
+        return LOVEDA_NUM_CLASSES
+    return args.num_classes if args.num_classes is not None else 2
+
+
 def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
     epochs = args.epochs
     if epochs is None:
@@ -95,15 +103,12 @@ def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
     if image_size is None and args.mode == "debug":
         image_size = 256
 
-    if args.lr is None:
-        lr = 1e-3 if args.model == "unet" else 6e-4
-    else:
-        lr = args.lr
-
-    if args.weight_decay is None:
-        weight_decay = 1e-4 if args.model == "unet" else 1e-2
-    else:
-        weight_decay = args.weight_decay
+    lr = args.lr if args.lr is not None else (1e-3 if args.model == "unet" else 6e-4)
+    weight_decay = (
+        args.weight_decay
+        if args.weight_decay is not None
+        else (1e-4 if args.model == "unet" else 1e-2)
+    )
 
     amp = args.amp
     if amp is None:
@@ -111,7 +116,7 @@ def resolve_defaults(args: argparse.Namespace, device: torch.device) -> dict:
     if device.type != "cuda":
         amp = False
 
-    output = args.output or f"runs/{args.model}-{args.mode}"
+    output = args.output or f"runs/{args.dataset}-{args.model}-{args.mode}"
 
     return {
         "epochs": epochs,
@@ -138,6 +143,24 @@ def build_datasets(args: argparse.Namespace, cfg: dict):
     train_cap = args.debug_train_samples if args.mode == "debug" else None
     val_cap = args.debug_val_samples if args.mode == "debug" else None
 
+    if args.dataset == "loveda":
+        domains = loveda_domains(args.domain)
+        train_ds = LoveDADataset(
+            args.data,
+            args.train_split,
+            domains=domains,
+            image_size=cfg["image_size"],
+            max_samples=train_cap,
+        )
+        val_ds = LoveDADataset(
+            args.data,
+            args.val_split,
+            domains=domains,
+            image_size=cfg["image_size"],
+            max_samples=val_cap,
+        )
+        return train_ds, val_ds
+
     train_ds = PairedSegDataset(
         args.data,
         args.train_split,
@@ -161,6 +184,7 @@ def main() -> None:
     args = parse_args()
     set_seed(args.seed)
     device = resolve_device(args.device)
+    num_classes = resolve_num_classes(args)
     cfg = resolve_defaults(args, device)
 
     if device.type == "cuda":
@@ -184,7 +208,7 @@ def main() -> None:
 
     model = build_model(
         args.model,
-        num_classes=args.num_classes,
+        num_classes=num_classes,
         in_channels=args.in_channels,
         mode=args.mode,
         variant=args.variant,
@@ -197,11 +221,17 @@ def main() -> None:
     )
     scaler = torch.cuda.amp.GradScaler(enabled=True) if cfg["amp"] else None
 
+    ignore_index = LOVEDA_IGNORE_INDEX if args.dataset == "loveda" else -1
+    class_names = LOVEDA_CLASS_NAMES if args.dataset == "loveda" else None
+
     output_dir = Path(cfg["output"])
     output_dir.mkdir(parents=True, exist_ok=True)
 
     resolved = vars(args).copy()
     resolved.update(cfg)
+    resolved["num_classes"] = num_classes
+    resolved["ignore_index"] = ignore_index
+    resolved["class_names"] = list(class_names) if class_names is not None else None
     resolved["device_resolved"] = str(device)
     resolved["train_samples"] = len(train_ds)
     resolved["val_samples"] = len(val_ds)
@@ -220,15 +250,30 @@ def main() -> None:
         print(f"resumed from {args.resume} at epoch {start_epoch}")
 
     print(
-        f"model={args.model} mode={args.mode} device={device} amp={cfg['amp']} "
-        f"params={resolved['parameters']/1e6:.3f}M "
+        f"dataset={args.dataset} model={args.model} mode={args.mode} "
+        f"device={device} amp={cfg['amp']} params={resolved['parameters']/1e6:.3f}M "
         f"train={len(train_ds)} val={len(val_ds)}"
     )
 
     final_metrics = None
     for epoch in range(start_epoch, cfg["epochs"] + 1):
-        loss = train_one_epoch(model, train_loader, optimizer, device, scaler, cfg["amp"])
-        metrics = evaluate(model, val_loader, device, args.num_classes, cfg["amp"])
+        loss = train_one_epoch(
+            model,
+            train_loader,
+            optimizer,
+            device,
+            scaler,
+            cfg["amp"],
+            ignore_index=ignore_index,
+        )
+        metrics = evaluate(
+            model,
+            val_loader,
+            device,
+            num_classes,
+            cfg["amp"],
+            class_names=class_names,
+        )
         final_metrics = metrics
 
         print(
@@ -251,9 +296,17 @@ def main() -> None:
             torch.save(checkpoint, output_dir / "best.pt")
 
     if final_metrics is None:
-        final_metrics = evaluate(model, val_loader, device, args.num_classes, cfg["amp"])
+        final_metrics = evaluate(
+            model,
+            val_loader,
+            device,
+            num_classes,
+            cfg["amp"],
+            class_names=class_names,
+        )
 
     result = {
+        "dataset": args.dataset,
         "model": args.model,
         "mode": args.mode,
         "best_miou": best_miou,
