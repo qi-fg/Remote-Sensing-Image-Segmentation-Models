@@ -43,8 +43,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch numpy pillow "transformers>=4.46,<5"
 
-      - name: LoveDA adapter tests
-        run: python -m unittest tests.test_loveda_adapter
+      - name: LoveDA adapter and training-recipe tests
+        run: python -m unittest tests.test_loveda_adapter tests.test_training_recipe
 
       - name: Unified U-Net smoke test
         run: python train.py --model unet --mode smoke --device cpu --output /tmp/unet-smoke
