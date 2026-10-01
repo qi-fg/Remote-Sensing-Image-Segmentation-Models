@@ -431,6 +431,7 @@ def main() -> None:
 
     start_epoch = 1
     best_miou = -1.0
+    best_metrics = None
     if args.resume:
         checkpoint = torch.load(args.resume, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint["model"])
@@ -440,6 +441,7 @@ def main() -> None:
             scheduler.load_state_dict(checkpoint["scheduler"])
         start_epoch = int(checkpoint.get("epoch", 0)) + 1
         best_miou = float(checkpoint.get("best_miou", -1.0))
+        best_metrics = checkpoint.get("best_metrics")
         print(f"resumed from {args.resume} at epoch {start_epoch}")
 
     print(
@@ -479,19 +481,24 @@ def main() -> None:
             f"lr={optimizer.param_groups[0]['lr']:.2e}"
         )
 
+        is_best = metrics["miou"] > best_miou
+        if is_best:
+            best_miou = metrics["miou"]
+            best_metrics = metrics
+
         checkpoint = {
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict() if scheduler is not None else None,
             "epoch": epoch,
-            "best_miou": max(best_miou, metrics["miou"]),
+            "metrics": metrics,
+            "best_miou": best_miou,
+            "best_metrics": best_metrics,
             "config": resolved,
         }
         torch.save(checkpoint, output_dir / "last.pt")
 
-        if metrics["miou"] > best_miou:
-            best_miou = metrics["miou"]
-            checkpoint["best_miou"] = best_miou
+        if is_best:
             torch.save(checkpoint, output_dir / "best.pt")
 
     if final_metrics is None:
@@ -509,6 +516,7 @@ def main() -> None:
         "model": args.model,
         "mode": args.mode,
         "best_miou": best_miou,
+        "best": best_metrics,
         "final": final_metrics,
         "output": str(output_dir),
     }
