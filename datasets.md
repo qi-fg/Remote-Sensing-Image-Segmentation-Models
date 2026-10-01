@@ -1,6 +1,6 @@
 # 📦 遥感图像分割常用数据集
 
-> 覆盖语义分割 / 实例分割 / 建筑物·道路提取 / **语言引导·推理分割** / 变化检测。链接以官方页面为准，若失效欢迎 PR 修正。
+> 覆盖语义分割 / 实例分割 / 建筑物·道路提取 / **语言引导·推理分割** / 变化检测。链接优先项目官网、作者仓库或可信数据托管页；若失效欢迎 PR 修正。训练前仍应核对数据许可、版本与官方 split。
 
 ---
 
@@ -14,7 +14,7 @@
 | **iSAID** | 2806 图，15 类 | 高分辨率航拍，CVPR 2019 | 语义 + 实例分割 | [🔗](https://captain-whu.github.io/iSAID/) |
 | **DeepGlobe Land Cover** | 1146 图，7 类 | 0.5 m，CVPR 2018 | 地表覆盖分类 | [🔗](http://deepglobe.org/) |
 | **GID (Gaofen Image Dataset)** | 150 图，15 类 | 高分二号，大规模 | 语义分割 | [🔗](https://captain-whu.github.io/GID/) |
-| **OpenEarthMap** | 5000 图，8 类 | 0.25–0.5 m，全球覆盖 | 语义分割 | 🔗 官网 |
+| **OpenEarthMap** | 5000 图，8 类 | 0.25–0.5 m，全球覆盖 | 语义分割 | [🔗](https://open-earth-map.org/) |
 
 ## 🎯 实例分割 / 目标分割（Instance Segmentation）
 
@@ -55,7 +55,7 @@
 | :-- | :-- | :-- | :-- |
 | **LEVIR-CD** | 637 对，0.5 m | 建筑变化检测基准 | [🔗](https://chen-yongrui.github.io/) |
 | **WHU-CD** | 1 对大幅影像 | 建筑物变化 | [🔗](http://gpcv.whu.edu.cn/data/) |
-| **CDD (Change Detection Dataset)** | 16,000 对 | 季节变化 | 🔗 官网 |
+| **CDD (Change Detection Dataset)** | 16,000 对 | 季节变化，256×256 | [🔗](https://zenodo.org/records/13290067) |
 
 ---
 
