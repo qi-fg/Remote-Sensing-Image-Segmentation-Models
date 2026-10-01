@@ -4,12 +4,13 @@
 
 # 🛰️ Remote-Sensing-Image-Segmentation-Models
 
-**遥感图像分割模型汇总 · 论文 + 官方代码 + 数据集 + 可运行基线**
+**遥感图像分割模型汇总 · 论文 + 代码实现（优先官方）+ 数据集 + 可运行基线**
 
-*A curated collection of Remote Sensing Image Segmentation models — papers, official code, datasets, and runnable baselines.*
+*A curated collection of Remote Sensing Image Segmentation models — papers, code implementations (official when available), datasets, and runnable baselines.*
 
 [![Awesome](https://img.shields.io/badge/Awesome-RS%20Segmentation-0e7490?style=for-the-badge&logo=awesomelists&logoColor=white)](https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models)
 [![Stars](https://img.shields.io/github/stars/qi-fg/Remote-Sensing-Image-Segmentation-Models?style=for-the-badge&color=ef4444&logo=github)](https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models/stargazers)
+[![Baseline CI](https://img.shields.io/github/actions/workflow/status/qi-fg/Remote-Sensing-Image-Segmentation-Models/baseline-smoke.yml?style=for-the-badge&label=baselines&logo=githubactions)](https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models/actions/workflows/baseline-smoke.yml)
 [![Papers](https://img.shields.io/badge/Methods-60%2B-15803d?style=for-the-badge)](README.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](../../pulls)
 [![License](https://img.shields.io/badge/License-MIT-3b82f6?style=for-the-badge)](LICENSE)
@@ -26,11 +27,11 @@
 
 本仓库就是为解决这个问题而生：
 
-- 📚 **方法总表**：按**方法族**（CNN → Transformer → Foundation/SAM → 弱监督/点监督 → **LLM / MLLM / Agent**）整理，含论文、会议/期刊、年份、官方代码、代表数据集。
+- 📚 **方法总表**：按**方法族**（CNN → Transformer → Foundation/SAM → 弱监督/点监督 → **LLM / MLLM / Agent**）整理，含论文、会议/期刊、年份、代码实现与代表数据集；代码链接**优先官方/作者实现**，否则明确按社区实现处理。
 - 📐 **可运行基线**：`baselines/` 下提供 **真实可跑** 的基线实现（U-Net / SegFormer / SAM wrapper），clone 下来装上依赖就能跑，**自带合成数据冒烟测试，无需数据集、无需 GPU**。
 - 📦 **数据集索引**：`datasets.md` 汇总常用 RS 分割数据集（Potsdam / Vaihingen / LoveDA / iSAID / DeepGlobe / WHU / HRSID ...）与下载入口。
 
-> 💡 与"只列链接"的 awesome-list 不同，本仓库**同时提供可运行的参考实现**——你可以直接把它当实验起点，而不是从零搭脚手架。
+> 💡 与"只列链接"的 awesome-list 不同，本仓库**同时提供可运行的参考实现、自动 smoke test 与复现规范**——可以把它当作实验起点，而不只是论文收藏夹。
 
 ---
 
@@ -48,9 +49,24 @@
 
 ---
 
+## 🧭 研究者使用入口
+
+如果你是为了**选 baseline、做毕业论文/论文实验或长期跟踪方向**，建议按下面的顺序使用：
+
+| 入口 | 用途 |
+| :-- | :-- |
+| **[BENCHMARKS.md](BENCHMARKS.md)** | 区分“论文报告结果”和“本仓库统一协议复现结果”，记录 split / crop / seed / pretraining / TTA 等关键变量 |
+| **[datasets.md](datasets.md)** | 查常用遥感分割数据集、任务类型和下载入口 |
+| **[baselines/](baselines)** | 从 U-Net / SegFormer / SAM wrapper 开始跑通自己的数据 |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | 新增论文、数据集和结果时的核验标准 |
+
+> **不要直接把不同论文里的 mIoU 当成统一排行榜。** 遥感分割对数据划分、裁剪尺寸、重叠推理、预训练、增强、TTA 和类别映射都很敏感。仓库后续会优先积累**统一协议下可复现**的结果，而不是只堆 SOTA 数字。
+
+---
+
 ## 🗂️ 方法总表
 
-> 说明：最后一列给出**论文链接**（优先 arXiv 免费全文，无 arXiv 时用 DOI 官方页）与**官方代码仓库**（💻）。部分方法无公开代码，仅提供论文链接。欢迎 PR 补充/修正。
+> 说明：最后一列给出**论文链接**（优先 arXiv 免费全文，无 arXiv 时用 DOI 官方页）与**代码仓库**（💻）。代码链接优先论文作者/项目官方实现；若官方代码未公开，可能收录高质量社区实现。新增条目时请在 PR 中标明代码状态，详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ### 🧱 A. CNN-based 经典基线
 
@@ -197,6 +213,14 @@ cd Remote-Sensing-Image-Segmentation-Models/baselines/unet
 pip install -r requirements.txt
 python train.py --demo     # 合成数据，CPU 几秒跑完，输出 mIoU
 ```
+
+---
+
+## 🧪 复现与 Benchmark
+
+仓库将结果分成两层：**Paper-reported**（原论文报告，仅作查阅）与 **Repository-controlled**（统一数据/训练/评测协议下的复现结果）。完整规范见 **[BENCHMARKS.md](BENCHMARKS.md)**。
+
+对 baseline 的改动会通过 GitHub Actions 自动执行 U-Net、SegFormer 与 SAM-RS wrapper 的 CPU smoke test，避免“README 说能跑、实际已经坏掉”的情况。
 
 ---
 
