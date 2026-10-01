@@ -288,8 +288,8 @@ def main() -> None:
     resolved["val_samples"] = len(val_ds)
     resolved["parameters"] = sum(p.numel() for p in model.parameters())
     resolved["git_commit"] = git_commit()
-    resolved["torch_version"] = torch.__version__
-    resolved["cuda_runtime"] = torch.version.cuda
+    resolved["torch_version"] = str(torch.__version__)
+    resolved["cuda_runtime"] = None if torch.version.cuda is None else str(torch.version.cuda)
     if args.model == "segformer_b0":
         resolved["pretrained_source"] = "nvidia/mit-b0" if cfg["pretrained"] else None
         try:
@@ -302,7 +302,7 @@ def main() -> None:
     start_epoch = 1
     best_miou = -1.0
     if args.resume:
-        checkpoint = torch.load(args.resume, map_location=device)
+        checkpoint = torch.load(args.resume, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint["model"])
         if "optimizer" in checkpoint:
             optimizer.load_state_dict(checkpoint["optimizer"])
