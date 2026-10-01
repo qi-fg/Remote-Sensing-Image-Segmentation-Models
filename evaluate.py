@@ -39,7 +39,7 @@ def main() -> None:
         else args.device
     )
 
-    checkpoint = torch.load(args.checkpoint, map_location=device)
+    checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=False)
     saved = checkpoint.get("config", {})
 
     model_name = args.model or saved.get("model")
