@@ -37,7 +37,10 @@ from torch.utils.data import DataLoader, Dataset
 
 # Allow `python baselines/unet/train.py` from the repo root.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from model import UNet  # noqa: E402
+try:
+    from .model import UNet  # package import
+except ImportError:
+    from model import UNet  # script execution fallback  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #

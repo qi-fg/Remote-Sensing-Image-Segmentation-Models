@@ -1,0 +1,66 @@
+name: Paper / Method Request
+description: Suggest a remote-sensing segmentation paper or method to add
+title: "[Paper] "
+labels: []
+body:
+  - type: input
+    id: method
+    attributes:
+      label: Method name
+      placeholder: e.g. MethodName
+    validations:
+      required: true
+
+  - type: input
+    id: paper
+    attributes:
+      label: Paper URL
+      description: Prefer arXiv, DOI, publisher, or project page.
+    validations:
+      required: true
+
+  - type: input
+    id: code
+    attributes:
+      label: Code URL
+      description: Leave blank if no public code is available.
+
+  - type: dropdown
+    id: code_status
+    attributes:
+      label: Code status
+      options:
+        - Official / author-provided
+        - Community implementation
+        - No public code
+        - Unsure
+    validations:
+      required: true
+
+  - type: input
+    id: venue
+    attributes:
+      label: Year / venue
+      placeholder: "2026 / CVPR"
+
+  - type: dropdown
+    id: task
+    attributes:
+      label: Task
+      options:
+        - Semantic segmentation
+        - Instance segmentation
+        - Weak / point supervision
+        - Foundation model / SAM adaptation
+        - Language-guided / reasoning segmentation
+        - Change detection
+        - Agent / tool orchestration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: note
+    attributes:
+      label: Why it belongs here
+      description: One or two factual sentences are enough.

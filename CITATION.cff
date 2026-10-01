@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If this repository supports your research, please cite the repository."
+title: "Remote-Sensing-Image-Segmentation-Models"
+type: software
+authors:
+  - name: "qi-fg"
+repository-code: "https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models"
+url: "https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models"
+license: MIT
+version: "0.2"
+date-released: "2026-10-01"
+keywords:
+  - remote sensing
+  - semantic segmentation
+  - image segmentation
+  - foundation models
+  - segment anything
+  - weak supervision
+  - reasoning segmentation
