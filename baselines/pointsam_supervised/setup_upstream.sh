@@ -57,18 +57,19 @@ git -C "$POINTSAM_DIR" checkout "$PIN_SHA"
 
 # Lightning 2.0.x imports pkg_resources at runtime. Setuptools removed
 # pkg_resources starting in v82, so pin the last compatible major line.
-"$PYTHON_BIN" -m pip install --force-reinstall "setuptools==81.0.0"
+"$PYTHON_BIN" -m pip install --force-reinstall "setuptools==80.9.0"
 
 # PointSAM pins Lightning 2.0.1 but leaves lightning-cloud unconstrained.
 # Newer lightning-cloud releases (for example 0.6.0) are incompatible with
 # Lightning 2.0.x and fail on import with missing AppinstancesIdBody.
 "$PYTHON_BIN" -m pip install --force-reinstall --no-deps "lightning-cloud==0.5.33"
 "$PYTHON_BIN" - <<'PY'
+from importlib.metadata import version
 import lightning
-import lightning_cloud
+import lightning_cloud  # noqa: F401
 print("Lightning import: OK")
 print("lightning:", lightning.__version__)
-print("lightning-cloud:", lightning_cloud.__version__)
+print("lightning-cloud:", version("lightning-cloud"))
 PY
 
 mkdir -p "$POINTSAM_DIR/pretrain"
