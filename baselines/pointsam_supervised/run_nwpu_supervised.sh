@@ -4,6 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 POINTSAM_DIR="${POINTSAM_DIR:-$(cd "$REPO_ROOT/.." && pwd)/PointSAM}"
+
+if [[ -n "${CONDA_PREFIX:-}" && -x "$CONDA_PREFIX/bin/python" ]]; then
+    PYTHON_BIN="${PYTHON_BIN:-$CONDA_PREFIX/bin/python}"
+else
+    PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+fi
+
+echo "Using Python: $PYTHON_BIN"
 POINTS="${POINTS:-1 2 3}"
 GPU="${GPU:-0}"
 
@@ -13,7 +21,7 @@ if [[ ! -f "$POINTSAM_DIR/train_supervise.py" ]]; then
     exit 1
 fi
 
-python "$SCRIPT_DIR/verify_nwpu.py" --pointsam-dir "$POINTSAM_DIR"
+"$PYTHON_BIN" "$SCRIPT_DIR/verify_nwpu.py" --pointsam-dir "$POINTSAM_DIR"
 
 if [[ ! -f "$POINTSAM_DIR/pretrain/sam_vit_b_01ec64.pth" ]]; then
     echo "Missing SAM ViT-B checkpoint under $POINTSAM_DIR/pretrain" >&2
@@ -30,5 +38,5 @@ for num_points in $POINTS; do
 
     out_dir="work_dir/nwpu/supervise/point_${num_points}"
     echo "=== NWPU supervised SAM ViT-B: ${num_points}-point ==="
-    CUDA_VISIBLE_DEVICES="$GPU" python train_supervise.py       --cfg configs.config_nwpu       --prompt point       --num_points "$num_points"       --out_dir "$out_dir"       --load_type load
+    CUDA_VISIBLE_DEVICES="$GPU" "$PYTHON_BIN" train_supervise.py       --cfg configs.config_nwpu       --prompt point       --num_points "$num_points"       --out_dir "$out_dir"       --load_type load
 done

@@ -6,7 +6,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 POINTSAM_DIR="${POINTSAM_DIR:-$(cd "$REPO_ROOT/.." && pwd)/PointSAM}"
 
-python - <<'PY'
+if [[ -n "${CONDA_PREFIX:-}" && -x "$CONDA_PREFIX/bin/python" ]]; then
+    PYTHON_BIN="${PYTHON_BIN:-$CONDA_PREFIX/bin/python}"
+else
+    PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+fi
+
+echo "Using Python: $PYTHON_BIN"
+
+"$PYTHON_BIN" - <<'PY'
 import sys
 if sys.version_info[:2] != (3, 10):
     raise SystemExit(
@@ -15,7 +23,7 @@ if sys.version_info[:2] != (3, 10):
 print("Python:", sys.version.split()[0])
 PY
 
-python - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 try:
     import torch
 except ImportError as exc:
@@ -45,7 +53,30 @@ fi
 git -C "$POINTSAM_DIR" fetch origin main
 git -C "$POINTSAM_DIR" checkout "$PIN_SHA"
 
-python -m pip install -r "$POINTSAM_DIR/requirements.txt"
+"$PYTHON_BIN" -m pip install -r "$POINTSAM_DIR/requirements.txt"
+
+# PointSAM only needs cv2 image I/O/processing during training. On headless
+# servers the GUI-enabled opencv-python wheel imports libGL.so.1, which may
+# not be installed. Replace it with the ABI-compatible headless wheel.
+"$PYTHON_BIN" -m pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless >/dev/null 2>&1 || true
+"$PYTHON_BIN" -m pip install --no-cache-dir "opencv-python-headless==4.7.0.72"
+
+# Lightning 2.0.x imports pkg_resources at runtime. Setuptools removed
+# pkg_resources starting in v82, so pin the last compatible major line.
+"$PYTHON_BIN" -m pip install --force-reinstall "setuptools==80.9.0"
+
+# PointSAM pins Lightning 2.0.1 but leaves lightning-cloud unconstrained.
+# Newer lightning-cloud releases (for example 0.6.0) are incompatible with
+# Lightning 2.0.x and fail on import with missing AppinstancesIdBody.
+"$PYTHON_BIN" -m pip install --force-reinstall --no-deps "lightning-cloud==0.5.33"
+"$PYTHON_BIN" - <<'PY'
+from importlib.metadata import version
+import lightning
+import lightning_cloud  # noqa: F401
+print("Lightning import: OK")
+print("lightning:", lightning.__version__)
+print("lightning-cloud:", version("lightning-cloud"))
+PY
 
 mkdir -p "$POINTSAM_DIR/pretrain"
 SAM_CKPT="$POINTSAM_DIR/pretrain/sam_vit_b_01ec64.pth"
