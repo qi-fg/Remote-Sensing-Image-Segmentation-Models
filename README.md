@@ -28,7 +28,7 @@
 本仓库就是为解决这个问题而生：
 
 - 📚 **方法总表**：按**方法族**（CNN → Transformer → Foundation/SAM → 弱监督/点监督 → **LLM / MLLM / Agent**）整理，含论文、会议/期刊、年份、代码实现与代表数据集；代码链接**优先官方/作者实现**，否则明确按社区实现处理。
-- 📐 **可运行基线**：`baselines/` 下提供 **真实可跑** 的基线实现（U-Net / SegFormer / SAM wrapper），clone 下来装上依赖就能跑，**自带合成数据冒烟测试，无需数据集、无需 GPU**。
+- 📐 **可运行基线**：`baselines/` 下提供 U-Net / SegFormer / SAM wrapper 等本地基线，以及 PointSAM 这类**固定上游 commit 的论文复现适配器**。本仓库自实现基线带合成数据 smoke test；真实论文复现适配器会明确标注所需数据与 GPU。
 - 📦 **数据集索引**：`datasets.md` 汇总常用 RS 分割数据集（Potsdam / Vaihingen / LoveDA / iSAID / DeepGlobe / WHU / HRSID ...）与下载入口。
 
 > 💡 与"只列链接"的 awesome-list 不同，本仓库**同时提供可运行的参考实现、自动 smoke test 与复现规范**——可以把它当作实验起点，而不只是论文收藏夹。
@@ -58,7 +58,8 @@
 | **[BENCHMARKS.md](BENCHMARKS.md)** | 区分“论文报告结果”和“本仓库统一协议复现结果”，记录 split / crop / seed / pretraining / TTA 等关键变量 |
 | **[datasets.md](datasets.md)** | 查常用遥感分割数据集、任务类型和下载入口 |
 | **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)** | 用统一入口按 smoke → debug → full 三档运行 U-Net / SegFormer，减少长时间训练后才发现问题的风险 |
-| **[baselines/](baselines)** | 查看 U-Net / SegFormer / SAM wrapper 的独立参考实现 |
+| **[POINTSAM_SUPERVISED_PROTOCOL.md](POINTSAM_SUPERVISED_PROTOCOL.md)** | 复现 ReSAM 表中 PointSAM 来源的 SAM-ViT-B 全 mask 监督上界（NWPU 1/2/3 点） |
+| **[baselines/](baselines)** | 查看 U-Net / SegFormer / SAM wrapper，以及论文复现适配器 |
 | **[CONTRIBUTING.md](CONTRIBUTING.md)** | 新增论文、数据集和结果时的核验标准 |
 
 > **不要直接把不同论文里的 mIoU 当成统一排行榜。** 遥感分割对数据划分、裁剪尺寸、重叠推理、预训练、增强、TTA 和类别映射都很敏感。仓库后续会优先积累**统一协议下可复现**的结果，而不是只堆 SOTA 数字。
@@ -200,7 +201,7 @@
 
 ## 📐 可运行基线
 
-`baselines/` 下是**真实可运行**的参考实现（不是伪代码），每个都带 **合成数据冒烟测试**，`--demo` 一键跑通，**不依赖真实数据集、无需 GPU**：
+`baselines/` 同时包含两类内容：本仓库自实现的轻量基线，以及固定上游版本的论文复现适配器。前者带 CPU smoke test；后者保留原论文协议，因此可能需要真实数据和 GPU：
 
 | 基线 | 类型 | 说明 | 快速验证 |
 | :--- | :-- | :-- | :-- |
@@ -208,6 +209,7 @@
 | [`baselines/segformer/`](baselines/segformer) | Transformer | 纯 PyTorch SegFormer，自包含，适合开发 / 消融 | `python train.py --demo` |
 | [`baselines/segformer_standard/`](baselines/segformer_standard) | Transformer | **标准 SegFormer-B0 + NVIDIA MiT-B0 ImageNet-1K 预训练**，用于全监督 benchmark | 统一入口 `--model segformer_b0` |
 | [`baselines/sam_rs/`](baselines/sam_rs) | Foundation | SAM prompt 分割封装（点/框 prompt → mask） | `python predict.py --demo` |
+| [`baselines/pointsam_supervised/`](baselines/pointsam_supervised) | Reproduction | **PointSAM 官方全 mask 监督 SAM-ViT-B**，复现 ReSAM 的 Supervised 对比行；NWPU 1/2/3 点 | 需 NWPU + GPU，见协议文档 |
 
 ```bash
 git clone https://github.com/qi-fg/Remote-Sensing-Image-Segmentation-Models
@@ -237,7 +239,7 @@ python train.py --dataset loveda --model segformer_b0 --mode full \
   --recipe loveda_segformer_b0_512 --data /data/LoveDA --device cuda --seed 0
 ```
 
-三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**`segformer` 是仓库自实现开发基线；`segformer_b0` 是标准架构 + NVIDIA ImageNet-1K 预训练的全监督参考。v0.6 新增 `loveda_segformer_b0_512` 命名协议，用于固定 512 crop、增强、warmup + poly LR 和验证设置。详细说明见 **[UNIFIED_TRAINING.md](UNIFIED_TRAINING.md)** 与 **[LOVEDA_SEGFORMER_PROTOCOL.md](LOVEDA_SEGFORMER_PROTOCOL.md)**。
+三种模式共享同一套数据/评测逻辑，并自动保存 `config.json`、`best.pt`、`last.pt` 和 `results.json`。**LoveDA 已支持官方 Train/Val + Urban/Rural 目录和 0→ignore、1..7→0..6 标签映射。**`segformer` 是仓库自实现开发基线；`segformer_b0` 是标准架构 + NVIDIA ImageNet-1K 预训练的全监督参考。v0.6 新增 `loveda_segformer_b0_512` 命名协议。点监督论文路线另有 **[POINTSAM_SUPERVISED_PROTOCOL.md](POINTSAM_SUPERVISED_PROTOCOL.md)**，用于复现 ReSAM 对比表中的全 mask 监督 SAM-ViT-B 上界。
 
 > GitHub Actions **只跑 smoke**，不会下载完整遥感数据集，也不会在 CI 里做长时间训练；真实数据的 debug/full 留给本地或 GPU 服务器。
 

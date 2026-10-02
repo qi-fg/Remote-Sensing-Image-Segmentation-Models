@@ -42,6 +42,19 @@ A controlled result should record:
 7. hardware only when it affects the protocol;
 8. git commit or config file needed to reproduce the run.
 
+
+### C. Point-prompt full-supervision reference
+
+For point-supervised SAM papers, a full-mask-supervised SAM adaptation can still be evaluated with 1/2/3 point prompts. Keep this separate from prompt-free semantic-segmentation baselines such as SegFormer.
+
+Paper-reported NWPU VHR-10 values used by ReSAM for `Supervised [PointSAM]`:
+
+| Method | Backbone | Split | 1-Point IoU / F1 | 2-Point IoU / F1 | 3-Point IoU / F1 | Source |
+| :-- | :-- | :-- | :--: | :--: | :--: | :-- |
+| PointSAM supervised | SAM ViT-B + LoRA | upstream 520 train / 130 val | 78.73 / 86.74 | 80.88 / 88.58 | 81.12 / 88.79 | ReSAM Table 1 / PointSAM |
+
+The reproduction adapter is documented in **[POINTSAM_SUPERVISED_PROTOCOL.md](POINTSAM_SUPERVISED_PROTOCOL.md)**. Local reproduced values must be reported separately from the literature row.
+
 ## 2. Recommended first controlled benchmark
 
 For a compact and useful first benchmark, start with one semantic-segmentation dataset and only a few representative model families:
@@ -61,7 +74,7 @@ For semantic segmentation, report at least:
 - **mF1 / Dice** when commonly used by the dataset or task;
 - **OA** only as a secondary metric for strongly imbalanced segmentation datasets.
 
-For instance segmentation, use the dataset's standard AP/AR protocol. For change detection, explicitly state whether metrics are pixel-level, object-level, or semantic-change metrics.
+For instance segmentation, use the dataset's standard AP/AR protocol unless the paper being reproduced explicitly defines another mask metric. PointSAM/ReSAM report imagewise binary mask IoU and F1 for the prompted instances, so their reproduction must use that upstream evaluator rather than replacing it with COCO AP. For change detection, explicitly state whether metrics are pixel-level, object-level, or semantic-change metrics.
 
 ## 4. Reproducibility checklist
 
