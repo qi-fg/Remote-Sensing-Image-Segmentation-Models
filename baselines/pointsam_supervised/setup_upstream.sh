@@ -55,6 +55,12 @@ git -C "$POINTSAM_DIR" checkout "$PIN_SHA"
 
 "$PYTHON_BIN" -m pip install -r "$POINTSAM_DIR/requirements.txt"
 
+# PointSAM only needs cv2 image I/O/processing during training. On headless
+# servers the GUI-enabled opencv-python wheel imports libGL.so.1, which may
+# not be installed. Replace it with the ABI-compatible headless wheel.
+"$PYTHON_BIN" -m pip uninstall -y opencv-python opencv-contrib-python opencv-python-headless >/dev/null 2>&1 || true
+"$PYTHON_BIN" -m pip install --no-cache-dir "opencv-python-headless==4.7.0.72"
+
 # Lightning 2.0.x imports pkg_resources at runtime. Setuptools removed
 # pkg_resources starting in v82, so pin the last compatible major line.
 "$PYTHON_BIN" -m pip install --force-reinstall "setuptools==80.9.0"
