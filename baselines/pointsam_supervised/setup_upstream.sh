@@ -6,7 +6,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 POINTSAM_DIR="${POINTSAM_DIR:-$(cd "$REPO_ROOT/.." && pwd)/PointSAM}"
 
-python - <<'PY'
+if [[ -n "${CONDA_PREFIX:-}" && -x "$CONDA_PREFIX/bin/python" ]]; then
+    PYTHON_BIN="${PYTHON_BIN:-$CONDA_PREFIX/bin/python}"
+else
+    PYTHON_BIN="${PYTHON_BIN:-$(command -v python)}"
+fi
+
+echo "Using Python: $PYTHON_BIN"
+
+"$PYTHON_BIN" - <<'PY'
 import sys
 if sys.version_info[:2] != (3, 10):
     raise SystemExit(
@@ -15,7 +23,7 @@ if sys.version_info[:2] != (3, 10):
 print("Python:", sys.version.split()[0])
 PY
 
-python - <<'PY'
+"$PYTHON_BIN" - <<'PY'
 try:
     import torch
 except ImportError as exc:
@@ -45,7 +53,7 @@ fi
 git -C "$POINTSAM_DIR" fetch origin main
 git -C "$POINTSAM_DIR" checkout "$PIN_SHA"
 
-python -m pip install -r "$POINTSAM_DIR/requirements.txt"
+"$PYTHON_BIN" -m pip install -r "$POINTSAM_DIR/requirements.txt"
 
 mkdir -p "$POINTSAM_DIR/pretrain"
 SAM_CKPT="$POINTSAM_DIR/pretrain/sam_vit_b_01ec64.pth"
