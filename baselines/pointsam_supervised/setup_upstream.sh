@@ -55,6 +55,18 @@ git -C "$POINTSAM_DIR" checkout "$PIN_SHA"
 
 "$PYTHON_BIN" -m pip install -r "$POINTSAM_DIR/requirements.txt"
 
+# PointSAM pins Lightning 2.0.1 but leaves lightning-cloud unconstrained.
+# Newer lightning-cloud releases (for example 0.6.0) are incompatible with
+# Lightning 2.0.x and fail on import with missing AppinstancesIdBody.
+"$PYTHON_BIN" -m pip install --force-reinstall --no-deps "lightning-cloud==0.5.33"
+"$PYTHON_BIN" - <<'PY'
+import lightning
+import lightning_cloud
+print("Lightning import: OK")
+print("lightning:", lightning.__version__)
+print("lightning-cloud:", lightning_cloud.__version__)
+PY
+
 mkdir -p "$POINTSAM_DIR/pretrain"
 SAM_CKPT="$POINTSAM_DIR/pretrain/sam_vit_b_01ec64.pth"
 if [[ ! -f "$SAM_CKPT" ]]; then
